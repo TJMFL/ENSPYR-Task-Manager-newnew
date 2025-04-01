@@ -106,7 +106,7 @@ const AIAssistant: React.FC = () => {
         id: Date.now() + 2,
         role: 'assistant',
         content: result.length > 0 
-          ? "I've identified the following tasks from your text:" 
+          ? "I've identified the following tasks from your text and intelligently assigned priorities based on context, deadlines, and importance:" 
           : "I couldn't identify any specific tasks in your message. Could you provide more details or a clearer description of the tasks?",
         timestamp: new Date(),
         extractedTasks: result,

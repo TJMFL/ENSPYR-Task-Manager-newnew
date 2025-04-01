@@ -63,8 +63,11 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             {extractedTasks.map((task, idx) => (
               <Card key={idx} className="bg-white p-3 rounded border border-gray-200">
                 <h4 className="font-medium text-sm">{task.title}</h4>
-                <div className="flex items-center mt-2 text-sm">
-                  <div className="mr-3">
+                {task.description && (
+                  <p className="text-xs text-gray-600 mt-1">{task.description}</p>
+                )}
+                <div className="flex flex-wrap items-center mt-2 text-sm">
+                  <div className="mr-4 mb-1">
                     <span className="text-xs text-gray-500">Due date:</span>
                     <p className="font-medium">
                       {task.dueDate 
@@ -76,18 +79,31 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                         : 'Not specified'}
                     </p>
                   </div>
-                  <div>
+                  <div className="mb-1">
                     <span className="text-xs text-gray-500">Priority:</span>
-                    <p className={`font-medium ${
-                      task.priority === 'high' ? 'text-red-500' : 
-                      task.priority === 'medium' ? 'text-amber-500' : 
-                      'text-blue-500'
-                    }`}>
-                      {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                    </p>
+                    <div className="flex items-center">
+                      <div className={`w-2 h-2 rounded-full mr-1 ${
+                        task.priority === 'high' ? 'bg-red-500' : 
+                        task.priority === 'medium' ? 'bg-amber-500' : 
+                        'bg-blue-500'
+                      }`}></div>
+                      <p className={`font-medium ${
+                        task.priority === 'high' ? 'text-red-500' : 
+                        task.priority === 'medium' ? 'text-amber-500' : 
+                        'text-blue-500'
+                      }`}>
+                        {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
+                      </p>
+                    </div>
                   </div>
+                  {task.category && (
+                    <div className="ml-4 mb-1">
+                      <span className="text-xs text-gray-500">Category:</span>
+                      <p className="font-medium">{task.category}</p>
+                    </div>
+                  )}
                 </div>
-                <div className="flex mt-2">
+                <div className="flex mt-3">
                   <Button 
                     className="text-xs mr-2" 
                     size="sm" 

@@ -32,18 +32,41 @@ export async function extractTasksFromText(text: string): Promise<ExtractedTask[
       messages: [
         {
           role: "system",
-          content: `You are an AI assistant that helps extract actionable tasks from text.
+          content: `You are an AI assistant that helps extract actionable tasks from text and intelligently prioritizes them.
           Today's date is ${currentDate}.
           
           YOUR TASK:
           1. Identify clear tasks from the user's message
           2. For each task, determine:
              - A concise task title
-             - A brief description if appropriate
+             - A brief description if appropriate (include reasoning for priority in the description)
              - Most importantly: Convert relative dates (like "tomorrow", "next week", "Friday") to actual YYYY-MM-DD format dates
-             - Assign an appropriate priority (low/medium/high)
+             - Intelligently assign a priority (low/medium/high) with advanced reasoning
              - Assign a logical category if possible
           
+          PRIORITY REASONING RULES:
+          1. HIGH priority tasks meet any of these criteria:
+             - Due within 2 days
+             - Contains urgent language ("ASAP", "urgent", "critical", "immediately")
+             - Involves high-value clients or management
+             - Blocks other people's work
+             - Has financial or legal implications
+             - Contains words like "deadline" or "overdue"
+          
+          2. MEDIUM priority tasks meet any of these criteria:
+             - Due within 1 week
+             - Important but not urgent
+             - Mentioned with moderate urgency language
+             - Required for planned work to continue
+             - Customer-facing but not on critical path
+             
+          3. LOW priority tasks meet any of these criteria:
+             - Due dates more than 1 week away
+             - No specific deadline mentioned
+             - "Nice to have" improvements
+             - Internal or personal tasks with little impact
+             - No dependencies from other tasks
+
           RULES FOR DATE HANDLING:
           - Always convert relative dates to absolute YYYY-MM-DD format
           - "tomorrow" = the day after the current date (${new Date(today.getTime() + 86400000).toISOString().split('T')[0]})
@@ -57,9 +80,9 @@ export async function extractTasksFromText(text: string): Promise<ExtractedTask[
             "tasks": [
               {
                 "title": "Brief task title",
-                "description": "Optional longer description",
+                "description": "Description including priority reasoning: [reason for priority level]",
                 "dueDate": "YYYY-MM-DD", (based on current date context)
-                "priority": "low", "medium", or "high" (based on urgency),
+                "priority": "low", "medium", or "high" (based on intelligent analysis),
                 "category": "Optional category/tag for the task"
               }
             ]
