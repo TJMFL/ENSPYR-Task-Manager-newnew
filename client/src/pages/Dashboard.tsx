@@ -181,7 +181,7 @@ const Dashboard: React.FC = () => {
           <div className="bg-white rounded-lg shadow p-5">
             <h2 className="text-lg font-semibold mb-4 flex items-center">
               <Zap className="h-5 w-5 mr-2 text-accent" />
-              Recently AI-Generated Tasks
+              Recently Added Tasks
             </h2>
             
             <div className="overflow-x-auto">
@@ -198,7 +198,7 @@ const Dashboard: React.FC = () => {
                   {aiGeneratedTasks.length === 0 ? (
                     <tr>
                       <td colSpan={4} className="px-4 py-4 text-center text-sm text-gray-500">
-                        No AI-generated tasks yet. Use the AI Assistant to create some!
+                        No recently added tasks. Create a new task or use the AI Assistant!
                       </td>
                     </tr>
                   ) : (
