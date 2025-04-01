@@ -60,14 +60,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createTask(taskData: InsertTask): Promise<Task> {
-    const [task] = await db.insert(tasks).values(taskData).returning();
+    // Create a processed copy that safely handles date conversion
+    const processedData: any = { ...taskData };
+    
+    // Convert dueDate from string to Date if it's a string
+    if (processedData.dueDate && typeof processedData.dueDate === 'string') {
+      processedData.dueDate = new Date(processedData.dueDate);
+    }
+    
+    const [task] = await db.insert(tasks).values(processedData).returning();
     return task;
   }
 
-  async updateTask(id: number, taskData: Partial<Task>): Promise<Task | undefined> {
+  async updateTask(id: number, taskData: Partial<Task> | any): Promise<Task | undefined> {
+    // Handle date string conversion if needed
+    const processedData = { ...taskData };
+    
+    // Convert dueDate from string to Date if it's a string
+    if (processedData.dueDate && typeof processedData.dueDate === 'string') {
+      processedData.dueDate = new Date(processedData.dueDate);
+    }
+    
     const [updatedTask] = await db
       .update(tasks)
-      .set(taskData)
+      .set(processedData)
       .where(eq(tasks.id, id))
       .returning();
     

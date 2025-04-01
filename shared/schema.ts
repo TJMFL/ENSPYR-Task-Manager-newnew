@@ -43,9 +43,15 @@ export const tasks = pgTable("tasks", {
   userId: integer("user_id").references(() => users.id),
 });
 
-export const insertTaskSchema = createInsertSchema(tasks).omit({
+// Create the base schema
+const baseInsertTaskSchema = createInsertSchema(tasks).omit({
   id: true,
   createdAt: true,
+});
+
+// Override the dueDate field to accept string or date
+export const insertTaskSchema = baseInsertTaskSchema.extend({
+  dueDate: z.union([z.string(), z.date(), z.null()]).optional(),
 });
 
 // AI message schema

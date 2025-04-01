@@ -64,23 +64,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log("Task data received:", req.body);
       
-      // Ensure dueDate is properly formatted if present
-      const formData = { ...req.body };
-      if (formData.dueDate && typeof formData.dueDate === 'string' && formData.dueDate.trim() !== '') {
-        try {
-          // Create a Date object and convert it to ISO string
-          formData.dueDate = new Date(formData.dueDate).toISOString();
-        } catch (e) {
-          console.error("Error parsing date:", e);
-          delete formData.dueDate; // Remove invalid date
-        }
-      } else if (formData.dueDate === '') {
-        // Remove empty date strings
-        delete formData.dueDate;
-      }
+      // Validate the input data first using our schema that accepts string dates
+      const validatedData = insertTaskSchema.parse(req.body);
       
-      const taskData = insertTaskSchema.parse(formData);
-      const task = await storage.createTask(taskData);
+      // Create the task in the database
+      const task = await storage.createTask(validatedData);
       res.status(201).json(task);
     } catch (error) {
       if (error instanceof ZodError) {
@@ -108,8 +96,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Validate the update data
-      const updateData = taskValidator.partial().parse(req.body);
-      const updatedTask = await storage.updateTask(id, updateData);
+      const validData = insertTaskSchema.partial().parse(req.body);
+      const updatedTask = await storage.updateTask(id, validData);
       res.json(updatedTask);
     } catch (error) {
       if (error instanceof ZodError) {
