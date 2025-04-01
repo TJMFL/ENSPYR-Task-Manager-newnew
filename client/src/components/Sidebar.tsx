@@ -51,7 +51,7 @@ const Sidebar: React.FC = () => {
     <div className="bg-gray-900 text-white w-64 flex-shrink-0 flex flex-col">
       <div className="p-4 flex items-center space-x-2">
         <ClipboardList className="h-8 w-8 text-primary" />
-        <h1 className="text-xl font-semibold">AI Task Manager</h1>
+        <h1 className="text-xl font-semibold">ENSPYR - Task Manager</h1>
       </div>
       
       <nav className="mt-8 flex-1">

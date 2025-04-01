@@ -123,7 +123,7 @@ export default function Login() {
                 <path d="m21 21-.88-.88" />
                 <path d="M15.88 15.88 15 15" />
               </svg>
-              <h2 className="text-3xl font-bold tracking-tight text-gray-900">AI Task Manager</h2>
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900">ENSPYR - Task Manager</h2>
             </div>
             <p className="mt-2 text-sm text-gray-600">
               Sign in to access your smart task management system
@@ -244,7 +244,7 @@ export default function Login() {
           <div className="max-w-2xl mx-auto text-center">
             <h1 className="text-4xl font-bold mb-6">Transform Your Productivity with AI</h1>
             <p className="text-xl mb-8">
-              AI Task Manager helps you organize, prioritize, and complete your tasks efficiently. Let AI handle the heavy lifting while you focus on what matters most.
+              ENSPYR - Task Manager helps you organize, prioritize, and complete your tasks efficiently. Let AI handle the heavy lifting while you focus on what matters most.
             </p>
             <div className="grid grid-cols-2 gap-6 mt-12">
               <div className="bg-white/10 backdrop-blur-sm rounded-lg p-6">
