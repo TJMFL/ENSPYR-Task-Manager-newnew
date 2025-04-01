@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Task, TaskInput, TaskStatus, TaskStatusType, ExtractedTask } from '@/lib/types';
+import { Task, TaskInput, TaskStatus, TaskStatusType, ExtractedTask, TaskStats } from '@/lib/types';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
@@ -22,7 +22,7 @@ export function useTaskManager() {
   const {
     data: stats,
     isLoading: statsLoading,
-  } = useQuery({
+  } = useQuery<TaskStats>({
     queryKey: ['/api/task-stats'],
   });
 

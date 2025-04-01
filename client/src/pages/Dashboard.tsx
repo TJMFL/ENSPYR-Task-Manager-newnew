@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { DragDropContext, DropResult } from 'react-beautiful-dnd';
 import { 
   ClipboardList, 
@@ -10,10 +10,11 @@ import {
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { useTaskManager } from '@/hooks/useTaskManager';
-import { TaskStatus } from '@/lib/types';
+import { TaskStatus, TaskStats } from '@/lib/types';
 import StatCard from '@/components/StatCard';
 import TaskColumn from '@/components/TaskColumn';
 import NewTaskDialog from '@/components/NewTaskDialog';
+import DashboardAIAssistant from '@/components/DashboardAIAssistant';
 
 const Dashboard: React.FC = () => {
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
@@ -107,7 +108,7 @@ const Dashboard: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard 
           title="Total Tasks" 
-          value={stats?.total || 0} 
+          value={stats ? stats.total : 0} 
           icon={<ClipboardList className="h-6 w-6" />} 
           iconBgColor="bg-blue-100" 
           iconColor="text-primary" 
@@ -115,7 +116,7 @@ const Dashboard: React.FC = () => {
         
         <StatCard 
           title="In Progress" 
-          value={stats?.inProgress || 0} 
+          value={stats ? stats.inProgress : 0} 
           icon={<Zap className="h-6 w-6" />} 
           iconBgColor="bg-amber-100" 
           iconColor="text-amber-500" 
@@ -123,7 +124,7 @@ const Dashboard: React.FC = () => {
         
         <StatCard 
           title="Completed" 
-          value={stats?.completed || 0} 
+          value={stats ? stats.completed : 0} 
           icon={<CheckCheck className="h-6 w-6" />} 
           iconBgColor="bg-green-100" 
           iconColor="text-green-500" 
@@ -131,7 +132,7 @@ const Dashboard: React.FC = () => {
         
         <StatCard 
           title="Completion Rate" 
-          value={`${stats?.completionRate || 0}%`} 
+          value={`${stats ? stats.completionRate : 0}%`} 
           icon={<BarChart className="h-6 w-6" />} 
           iconBgColor="bg-violet-100" 
           iconColor="text-violet-500" 
@@ -178,65 +179,7 @@ const Dashboard: React.FC = () => {
         
         {/* AI Assistant (2 cols wide) */}
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow p-5">
-            <h2 className="text-lg font-semibold mb-4 flex items-center">
-              <Zap className="h-5 w-5 mr-2 text-accent" />
-              Recently Added Tasks
-            </h2>
-            
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Task</th>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-                    <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {aiGeneratedTasks.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="px-4 py-4 text-center text-sm text-gray-500">
-                        No recently added tasks. Create a new task or use the AI Assistant!
-                      </td>
-                    </tr>
-                  ) : (
-                    aiGeneratedTasks.slice(0, 5).map((task) => (
-                      <tr key={task.id} onClick={() => handleTaskClick(task)} className="cursor-pointer hover:bg-gray-50">
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{task.title}</div>
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">
-                            {task.dueDate ? format(new Date(task.dueDate), 'MMM d, yyyy') : 'Not set'}
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                            ${task.priority === 'high' ? 'bg-red-100 text-red-800' : 
-                              task.priority === 'medium' ? 'bg-amber-100 text-amber-800' : 
-                              'bg-blue-100 text-blue-800'}`}>
-                            {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                            ${task.status === 'todo' ? 'bg-blue-100 text-blue-800' : 
-                              task.status === 'in_progress' ? 'bg-amber-100 text-amber-800' : 
-                              'bg-green-100 text-green-800'}`}>
-                            {task.status === 'todo' ? 'To Do' : 
-                             task.status === 'in_progress' ? 'In Progress' : 
-                             'Completed'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <DashboardAIAssistant onTasksAdded={() => {}} />
         </div>
       </div>
 

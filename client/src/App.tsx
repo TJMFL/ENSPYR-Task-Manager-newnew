@@ -185,7 +185,7 @@ function Router() {
         {isAuthenticated ? <TaskBoard /> : <Redirect to="/auth" />}
       </Route>
       <Route path="/ai-assistant">
-        {isAuthenticated ? <AIAssistant /> : <Redirect to="/auth" />}
+        {isAuthenticated ? <Redirect to="/dashboard" /> : <Redirect to="/auth" />}
       </Route>
       <Route path="/calendar">
         {isAuthenticated ? <CalendarView /> : <Redirect to="/auth" />}
