@@ -46,7 +46,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, onDelete, className,
 
   // Format the task due date
   const formattedDueDate = task.dueDate 
-    ? format(new Date(task.dueDate), 'MMM d')
+    ? format(new Date(task.dueDate), 'E, MMM d')  // Adds day of week (Mon, Tue, etc.)
     : '';
 
   const handleEdit = (e: React.MouseEvent) => {

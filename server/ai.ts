@@ -22,22 +22,44 @@ export type ExtractedTask = z.infer<typeof extractedTaskSchema>;
 // Function to extract tasks from text using Groq
 export async function extractTasksFromText(text: string): Promise<ExtractedTask[]> {
   try {
+    // Get current date information for context
+    const today = new Date();
+    const currentDate = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+    
     // Using Groq's LLaMA 3 model which is fast and efficient
     const response = await groqClient.chat.completions.create({
       model: "llama3-70b-8192", // Using Groq's LLaMA 3 model
       messages: [
         {
           role: "system",
-          content: `You are an AI assistant that helps extract actionable tasks from text. 
-          Identify clear tasks, infer due dates when possible (in ISO format), and assign appropriate priorities.
-          Respond with a JSON object with a 'tasks' array containing task objects with the following structure:
+          content: `You are an AI assistant that helps extract actionable tasks from text.
+          Today's date is ${currentDate}.
+          
+          YOUR TASK:
+          1. Identify clear tasks from the user's message
+          2. For each task, determine:
+             - A concise task title
+             - A brief description if appropriate
+             - Most importantly: Convert relative dates (like "tomorrow", "next week", "Friday") to actual YYYY-MM-DD format dates
+             - Assign an appropriate priority (low/medium/high)
+             - Assign a logical category if possible
+          
+          RULES FOR DATE HANDLING:
+          - Always convert relative dates to absolute YYYY-MM-DD format
+          - "tomorrow" = the day after the current date (${new Date(today.getTime() + 86400000).toISOString().split('T')[0]})
+          - "next week" = 7 days from today
+          - Specific days of the week (like "Monday") should be the next occurrence of that day
+          - If a specific date is mentioned (e.g., "March 15"), use that
+          - If no date is mentioned, do not include a dueDate field
+          
+          Respond with a JSON object containing a 'tasks' array with the following structure:
           {
             "tasks": [
               {
                 "title": "Brief task title",
                 "description": "Optional longer description",
-                "dueDate": "YYYY-MM-DD", (optional, infer from context if possible)
-                "priority": "low", "medium", or "high" (infer from urgency),
+                "dueDate": "YYYY-MM-DD", (based on current date context)
+                "priority": "low", "medium", or "high" (based on urgency),
                 "category": "Optional category/tag for the task"
               }
             ]

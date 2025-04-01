@@ -66,7 +66,15 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                 <div className="flex items-center mt-2 text-sm">
                   <div className="mr-3">
                     <span className="text-xs text-gray-500">Due date:</span>
-                    <p className="font-medium">{task.dueDate ? new Date(task.dueDate).toLocaleDateString() : 'Not specified'}</p>
+                    <p className="font-medium">
+                      {task.dueDate 
+                        ? new Date(task.dueDate + 'T00:00:00').toLocaleDateString(undefined, {
+                            weekday: 'short',
+                            month: 'short', 
+                            day: 'numeric'
+                          }) 
+                        : 'Not specified'}
+                    </p>
                   </div>
                   <div>
                     <span className="text-xs text-gray-500">Priority:</span>
