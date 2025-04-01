@@ -4,6 +4,8 @@ import {
   type Task, type InsertTask,
   type AIMessage, type InsertAIMessage
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, desc } from "drizzle-orm";
 
 // Storage interface
 export interface IStorage {
@@ -25,107 +27,74 @@ export interface IStorage {
   createAIMessage(message: InsertAIMessage): Promise<AIMessage>;
 }
 
-// Memory storage implementation
-export class MemStorage implements IStorage {
-  private users: Map<number, User>;
-  private tasks: Map<number, Task>;
-  private aiMessages: Map<number, AIMessage>;
-  private userIdCounter: number;
-  private taskIdCounter: number;
-  private messageIdCounter: number;
-
-  constructor() {
-    this.users = new Map();
-    this.tasks = new Map();
-    this.aiMessages = new Map();
-    this.userIdCounter = 1;
-    this.taskIdCounter = 1;
-    this.messageIdCounter = 1;
-  }
-
+// Database storage implementation
+export class DatabaseStorage implements IStorage {
   // User operations
   async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.userIdCounter++;
-    const user: User = { ...insertUser, id };
-    this.users.set(id, user);
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
   // Task operations
   async getAllTasks(): Promise<Task[]> {
-    return Array.from(this.tasks.values());
+    return await db.select().from(tasks);
   }
 
   async getTaskById(id: number): Promise<Task | undefined> {
-    return this.tasks.get(id);
+    const [task] = await db.select().from(tasks).where(eq(tasks.id, id));
+    return task;
   }
 
   async getTasksByStatus(status: string): Promise<Task[]> {
-    return Array.from(this.tasks.values()).filter(
-      (task) => task.status === status
-    );
+    return await db.select().from(tasks).where(eq(tasks.status, status));
   }
 
   async createTask(taskData: InsertTask): Promise<Task> {
-    const id = this.taskIdCounter++;
-    const now = new Date();
-    const task: Task = { 
-      ...taskData, 
-      id, 
-      createdAt: now 
-    };
-    this.tasks.set(id, task);
+    const [task] = await db.insert(tasks).values(taskData).returning();
     return task;
   }
 
   async updateTask(id: number, taskData: Partial<Task>): Promise<Task | undefined> {
-    const task = this.tasks.get(id);
-    if (!task) return undefined;
+    const [updatedTask] = await db
+      .update(tasks)
+      .set(taskData)
+      .where(eq(tasks.id, id))
+      .returning();
     
-    const updatedTask: Task = { 
-      ...task, 
-      ...taskData 
-    };
-    
-    this.tasks.set(id, updatedTask);
     return updatedTask;
   }
 
   async deleteTask(id: number): Promise<boolean> {
-    return this.tasks.delete(id);
+    const result = await db.delete(tasks).where(eq(tasks.id, id));
+    return !!result;
   }
 
   // AI Message operations
   async getAIMessages(limit?: number): Promise<AIMessage[]> {
-    const messages = Array.from(this.aiMessages.values());
-    messages.sort((a, b) => {
-      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-    });
-    return limit ? messages.slice(0, limit) : messages;
+    const query = db.select().from(aiMessages).orderBy(desc(aiMessages.timestamp));
+    
+    if (limit) {
+      query.limit(limit);
+    }
+    
+    return await query;
   }
 
   async createAIMessage(message: InsertAIMessage): Promise<AIMessage> {
-    const id = this.messageIdCounter++;
-    const now = new Date();
-    const aiMessage: AIMessage = {
-      ...message,
-      id,
-      timestamp: now
-    };
-    this.aiMessages.set(id, aiMessage);
+    const [aiMessage] = await db.insert(aiMessages).values(message).returning();
     return aiMessage;
   }
 }
 
 // Create and export storage instance
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
