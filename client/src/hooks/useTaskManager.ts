@@ -37,6 +37,11 @@ export function useTaskManager() {
   // Create task mutation
   const createTaskMutation = useMutation({
     mutationFn: async (taskData: TaskInput) => {
+      // Convert empty due date strings to undefined
+      if (taskData.dueDate === '') {
+        taskData.dueDate = undefined;
+      }
+      
       const res = await apiRequest('POST', '/api/tasks', taskData);
       return res.json();
     },
@@ -60,6 +65,11 @@ export function useTaskManager() {
   // Update task mutation
   const updateTaskMutation = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<TaskInput> }) => {
+      // Convert empty due date strings to undefined
+      if (data.dueDate === '') {
+        data.dueDate = undefined;
+      }
+      
       const res = await apiRequest('PATCH', `/api/tasks/${id}`, data);
       return res.json();
     },
@@ -104,11 +114,19 @@ export function useTaskManager() {
     },
   });
 
-  // Extract tasks mutation
-  const extractTasksMutation = useMutation({
+  // Extract tasks mutation with proper typing
+  const extractTasksMutation = useMutation<
+    { tasks: ExtractedTask[] }, 
+    Error, 
+    string
+  >({
     mutationFn: async (text: string) => {
       const res = await apiRequest('POST', '/api/extract-tasks', { text });
       const data = await res.json();
+      return data;
+    },
+    onSuccess: (data) => {
+      // Clear any previous extraction data that might be lingering
       return data;
     },
     onError: (error) => {

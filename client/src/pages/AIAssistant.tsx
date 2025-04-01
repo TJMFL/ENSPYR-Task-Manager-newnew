@@ -8,9 +8,18 @@ import ChatMessage from '@/components/ChatMessage';
 import NewTaskDialog from '@/components/NewTaskDialog';
 import { ExtractedTask, TaskInput, TaskStatus } from '@/lib/types';
 
+// Define message interface
+interface Message {
+  id: number;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: Date;
+  extractedTasks?: ExtractedTask[];
+}
+
 const AIAssistant: React.FC = () => {
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<ExtractedTask | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -30,7 +39,7 @@ const AIAssistant: React.FC = () => {
         const fetchedMessages = await getAIMessages(10);
         if (fetchedMessages.length === 0) {
           // Add a welcome message if no messages exist
-          const welcomeMessage = {
+          const welcomeMessage: Message = {
             id: 0,
             role: 'system',
             content: "Hello! I can help you extract tasks from emails or messages. Just paste your text below, and I'll identify actionable items.",
@@ -57,16 +66,82 @@ const AIAssistant: React.FC = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Handle task extraction - runs after user submits a message
+  const processTaskExtraction = async (userInput: string) => {
+    // Create and show loading message
+    const loadingMessage: Message = {
+      id: Date.now() + 1,
+      role: 'assistant',
+      content: 'Analyzing your message...',
+      timestamp: new Date(),
+    };
+    
+    setMessages(prev => [...prev, loadingMessage]);
+    
+    try {
+      // Trigger task extraction
+      await extractTasks(userInput);
+      
+      // Wait to ensure state is updated
+      setTimeout(() => {
+        // Create AI response with extracted tasks
+        const aiResponse: Message = {
+          id: Date.now() + 2,
+          role: 'assistant',
+          content: extractedTasks.length > 0 
+            ? "I've identified the following tasks from your text:" 
+            : "I couldn't identify any specific tasks in your message. Could you provide more details or a clearer description of the tasks?",
+          timestamp: new Date(),
+          extractedTasks: extractedTasks,
+        };
+        
+        // Save AI response to server
+        saveAIMessage({
+          role: 'assistant',
+          content: aiResponse.content,
+        });
+        
+        // Update messages state, removing loading message
+        setMessages(prev => {
+          return prev.filter(msg => msg.id !== loadingMessage.id).concat(aiResponse);
+        });
+      }, 1000);
+    } catch (error) {
+      console.error('Error extracting tasks:', error);
+      
+      // Show error message
+      const errorMessage: Message = {
+        id: Date.now() + 2,
+        role: 'assistant',
+        content: 'Sorry, I encountered an error while processing your message. Please try again.',
+        timestamp: new Date(),
+      };
+      
+      // Save error message to server
+      saveAIMessage({
+        role: 'assistant',
+        content: errorMessage.content,
+      });
+      
+      // Update messages state, removing loading message
+      setMessages(prev => {
+        return prev.filter(msg => msg.id !== loadingMessage.id).concat(errorMessage);
+      });
+    }
+  };
+
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
     
+    const currentInput = input.trim();
+    
     // Add user message to UI
-    const userMessage = {
+    const userMessage: Message = {
       id: Date.now(),
       role: 'user',
-      content: input,
+      content: currentInput,
       timestamp: new Date(),
     };
     
@@ -77,69 +152,29 @@ const AIAssistant: React.FC = () => {
       // Save user message to server
       await saveAIMessage({
         role: 'user',
-        content: input,
+        content: currentInput,
       });
       
-      // Show loading message
-      const loadingMessage = {
-        id: Date.now() + 1,
-        role: 'assistant',
-        content: 'Analyzing your message...',
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, loadingMessage]);
-      
-      // Extract tasks
-      try {
-        await extractTasks(input);
-        
-        // Wait for the extraction to complete
-        setTimeout(async () => {
-          setMessages(prev => {
-            const filtered = prev.filter(msg => msg.id !== loadingMessage.id);
-            
-            const aiResponse = {
-              id: Date.now() + 2,
-              role: 'assistant',
-              content: extractedTasks.length > 0 
-                ? "I've identified the following tasks from your text:" 
-                : "I couldn't identify any specific tasks in your message. Could you provide more details or a clearer description of the tasks?",
-              timestamp: new Date(),
-              extractedTasks: extractedTasks,
-            };
-            
-            // Save AI response to server
-            saveAIMessage({
-              role: 'assistant',
-              content: aiResponse.content,
-            });
-            
-            return [...filtered, aiResponse];
-          });
-        }, 1000);
-      } catch (error) {
-        console.error("Error extracting tasks:", error);
-      }
+      // Process task extraction
+      await processTaskExtraction(currentInput);
     } catch (error) {
       console.error('Error processing message:', error);
       
-      // Show error message
-      setMessages(prev => {
-        const errorMessage = {
-          id: Date.now() + 2,
-          role: 'assistant',
-          content: 'Sorry, I encountered an error while processing your message. Please try again.',
-          timestamp: new Date(),
-        };
-        
-        // Save error message to server
-        saveAIMessage({
-          role: 'assistant',
-          content: errorMessage.content,
-        });
-        
-        return [...prev, errorMessage];
+      // Show error message if overall process fails
+      const errorMessage: Message = {
+        id: Date.now() + 2,
+        role: 'assistant',
+        content: 'Sorry, I encountered an error while processing your message. Please try again.',
+        timestamp: new Date(),
+      };
+      
+      // Save error message to server
+      saveAIMessage({
+        role: 'assistant',
+        content: errorMessage.content,
       });
+      
+      setMessages(prev => [...prev, errorMessage]);
     }
   };
 
