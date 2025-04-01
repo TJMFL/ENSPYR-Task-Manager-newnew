@@ -4,15 +4,18 @@ import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Task, TaskPriority } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { Edit, Trash2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface TaskCardProps {
   task: Task;
   onClick?: (task: Task) => void;
+  onDelete?: (task: Task) => void;
   className?: string;
   isDragging?: boolean;
 }
 
-const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, className, isDragging }) => {
+const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, onDelete, className, isDragging }) => {
   // Get border color based on priority
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -46,10 +49,20 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, className, isDraggin
     ? format(new Date(task.dueDate), 'MMM d')
     : '';
 
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onClick?.(task);
+  };
+  
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onDelete?.(task);
+  };
+
   return (
     <Card 
       className={cn(
-        'border-l-4 mb-3 cursor-grab',
+        'border-l-4 mb-3',
         getPriorityColor(task.priority),
         {
           'opacity-50': isDragging,
@@ -57,7 +70,6 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, className, isDraggin
         },
         className
       )}
-      onClick={() => onClick?.(task)}
     >
       <CardContent className="p-3">
         <div className="flex justify-between items-start mb-2">
@@ -86,8 +98,29 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, className, isDraggin
         )}
         
         <div className="flex justify-between items-center text-xs text-gray-500">
-          <span>{formattedDueDate}</span>
-          <span>{task.category}</span>
+          <div>
+            <span>{formattedDueDate}</span>
+            {task.category && <span className="ml-2">{task.category}</span>}
+          </div>
+          
+          <div className="flex space-x-1">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6" 
+              onClick={handleEdit}
+            >
+              <Edit className="h-3.5 w-3.5" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className="h-6 w-6 text-red-500 hover:text-red-700 hover:bg-red-50"
+              onClick={handleDelete}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>

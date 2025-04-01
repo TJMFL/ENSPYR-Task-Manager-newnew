@@ -9,9 +9,17 @@ interface TaskColumnProps {
   tasks: Task[];
   colorIndicator: string;
   onTaskClick: (task: Task) => void;
+  onDeleteTask?: (task: Task) => void;
 }
 
-const TaskColumn: React.FC<TaskColumnProps> = ({ id, title, tasks, colorIndicator, onTaskClick }) => {
+const TaskColumn: React.FC<TaskColumnProps> = ({ 
+  id, 
+  title, 
+  tasks, 
+  colorIndicator, 
+  onTaskClick, 
+  onDeleteTask 
+}) => {
   return (
     <div className="kanban-column bg-gray-50 rounded-lg p-4">
       <h3 className="font-medium text-gray-700 mb-3 flex items-center">
@@ -41,6 +49,7 @@ const TaskColumn: React.FC<TaskColumnProps> = ({ id, title, tasks, colorIndicato
                     <TaskCard 
                       task={task} 
                       onClick={onTaskClick}
+                      onDelete={onDeleteTask}
                       isDragging={snapshot.isDragging}
                     />
                   </div>

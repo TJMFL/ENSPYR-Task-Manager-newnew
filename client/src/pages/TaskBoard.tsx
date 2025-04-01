@@ -3,6 +3,17 @@ import { DragDropContext, DropResult } from 'react-beautiful-dnd';
 import { Plus, Filter } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { 
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuCheckboxItem,
@@ -31,9 +42,13 @@ const TaskBoard: React.FC = () => {
     setSelectedTask,
     createTask,
     updateTask,
+    deleteTask,
     moveTask,
     isPending
   } = useTaskManager();
+  
+  const [taskToDelete, setTaskToDelete] = useState<any>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Apply filters to tasks
   const applyFilters = (taskList: any[]) => {
@@ -60,6 +75,12 @@ const TaskBoard: React.FC = () => {
   const handleTaskClick = (task: any) => {
     setSelectedTask(task);
     setIsTaskDialogOpen(true);
+  };
+  
+  // Handle task deletion
+  const handleTaskDelete = (task: any) => {
+    setTaskToDelete(task);
+    setIsDeleteDialogOpen(true);
   };
 
   // Handle form submission for creating/updating tasks
@@ -158,7 +179,8 @@ const TaskBoard: React.FC = () => {
               title="To Do" 
               tasks={filteredTodoTasks} 
               colorIndicator="bg-blue-500" 
-              onTaskClick={handleTaskClick} 
+              onTaskClick={handleTaskClick}
+              onDeleteTask={handleTaskDelete}
             />
             
             <TaskColumn 
@@ -166,7 +188,8 @@ const TaskBoard: React.FC = () => {
               title="In Progress" 
               tasks={filteredInProgressTasks} 
               colorIndicator="bg-amber-500" 
-              onTaskClick={handleTaskClick} 
+              onTaskClick={handleTaskClick}
+              onDeleteTask={handleTaskDelete}
             />
             
             <TaskColumn 
@@ -174,7 +197,8 @@ const TaskBoard: React.FC = () => {
               title="Completed" 
               tasks={filteredCompletedTasks} 
               colorIndicator="bg-green-500" 
-              onTaskClick={handleTaskClick} 
+              onTaskClick={handleTaskClick}
+              onDeleteTask={handleTaskDelete}
             />
           </div>
         </DragDropContext>
@@ -188,6 +212,33 @@ const TaskBoard: React.FC = () => {
         editTask={selectedTask}
         isSubmitting={isPending}
       />
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the task
+              and remove it from the system.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              className="bg-red-500 hover:bg-red-600" 
+              onClick={() => {
+                if (taskToDelete) {
+                  deleteTask(taskToDelete.id);
+                  setTaskToDelete(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
