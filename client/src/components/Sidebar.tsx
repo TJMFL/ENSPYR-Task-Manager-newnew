@@ -11,6 +11,7 @@ import {
   FolderKanban,
   Settings,
   LogOut,
+  Calendar,
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
@@ -29,6 +30,11 @@ const Sidebar: React.FC = () => {
       title: 'Tasks', 
       icon: <ClipboardList className="h-5 w-5 mr-3" />, 
       path: '/tasks'
+    },
+    { 
+      title: 'Calendar', 
+      icon: <Calendar className="h-5 w-5 mr-3" />, 
+      path: '/calendar'
     },
     { 
       title: 'AI Assistant', 

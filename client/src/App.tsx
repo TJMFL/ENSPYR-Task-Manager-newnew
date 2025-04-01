@@ -8,6 +8,7 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import TaskBoard from "@/pages/TaskBoard";
 import AIAssistant from "@/pages/AIAssistant";
+import CalendarView from "@/pages/CalendarView";
 import Login from "@/pages/Login";
 import Logout from "@/pages/Logout";
 import Sidebar from "@/components/Sidebar";
@@ -185,6 +186,9 @@ function Router() {
       </Route>
       <Route path="/ai-assistant">
         {isAuthenticated ? <AIAssistant /> : <Redirect to="/auth" />}
+      </Route>
+      <Route path="/calendar">
+        {isAuthenticated ? <CalendarView /> : <Redirect to="/auth" />}
       </Route>
       <Route path="/projects">
         {isAuthenticated ? (
