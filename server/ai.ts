@@ -2,8 +2,11 @@ import OpenAI from "openai";
 import { z } from "zod";
 import { TaskPriority } from "@shared/schema";
 
-// Initialize OpenAI with API key
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "sk-dummy-key-for-development" });
+// Initialize OpenAI client with Groq API endpoint
+const groqClient = new OpenAI({
+  apiKey: process.env.GROQ_API_KEY,
+  baseURL: "https://api.groq.com/openai/v1",
+});
 
 // Task extraction schema
 const extractedTaskSchema = z.object({
@@ -16,27 +19,29 @@ const extractedTaskSchema = z.object({
 
 export type ExtractedTask = z.infer<typeof extractedTaskSchema>;
 
-// Function to extract tasks from text using OpenAI
+// Function to extract tasks from text using Groq
 export async function extractTasksFromText(text: string): Promise<ExtractedTask[]> {
   try {
-    // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+    // Using Groq's LLaMA 3 model which is fast and efficient
+    const response = await groqClient.chat.completions.create({
+      model: "llama3-70b-8192", // Using Groq's LLaMA 3 model
       messages: [
         {
           role: "system",
           content: `You are an AI assistant that helps extract actionable tasks from text. 
           Identify clear tasks, infer due dates when possible (in ISO format), and assign appropriate priorities.
-          Respond with a JSON array of task objects with the following structure:
-          [
-            {
-              "title": "Brief task title",
-              "description": "Optional longer description",
-              "dueDate": "YYYY-MM-DD", (optional, infer from context if possible)
-              "priority": "low", "medium", or "high" (infer from urgency),
-              "category": "Optional category/tag for the task"
-            }
-          ]`
+          Respond with a JSON object with a 'tasks' array containing task objects with the following structure:
+          {
+            "tasks": [
+              {
+                "title": "Brief task title",
+                "description": "Optional longer description",
+                "dueDate": "YYYY-MM-DD", (optional, infer from context if possible)
+                "priority": "low", "medium", or "high" (infer from urgency),
+                "category": "Optional category/tag for the task"
+              }
+            ]
+          }`
         },
         {
           role: "user",
@@ -49,7 +54,7 @@ export async function extractTasksFromText(text: string): Promise<ExtractedTask[
     // Parse the response
     const content = response.choices[0].message.content;
     if (!content) {
-      throw new Error("No content in OpenAI response");
+      throw new Error("No content in Groq AI response");
     }
 
     const parsedContent = JSON.parse(content);
