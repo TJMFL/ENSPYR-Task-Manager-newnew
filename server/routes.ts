@@ -62,11 +62,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   apiRouter.post("/tasks", async (req: Request, res: Response) => {
     try {
-      const taskData = insertTaskSchema.parse(req.body);
+      console.log("Task data received:", req.body);
+      
+      // Ensure dueDate is properly formatted if present
+      const formData = { ...req.body };
+      if (formData.dueDate && typeof formData.dueDate === 'string' && formData.dueDate.trim() !== '') {
+        try {
+          // Create a Date object and convert it to ISO string
+          formData.dueDate = new Date(formData.dueDate).toISOString();
+        } catch (e) {
+          console.error("Error parsing date:", e);
+          delete formData.dueDate; // Remove invalid date
+        }
+      } else if (formData.dueDate === '') {
+        // Remove empty date strings
+        delete formData.dueDate;
+      }
+      
+      const taskData = insertTaskSchema.parse(formData);
       const task = await storage.createTask(taskData);
       res.status(201).json(task);
     } catch (error) {
       if (error instanceof ZodError) {
+        console.error("Validation error:", error.errors);
         res.status(400).json({ 
           message: "Invalid task data", 
           error: error.errors.map(e => e.message).join(', ') 
