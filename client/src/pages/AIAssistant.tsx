@@ -90,31 +90,36 @@ const AIAssistant: React.FC = () => {
       setMessages(prev => [...prev, loadingMessage]);
       
       // Extract tasks
-      extractTasks(input);
-      
-      // Remove loading message and add response
-      setTimeout(async () => {
-        setMessages(prev => {
-          const filtered = prev.filter(msg => msg.id !== loadingMessage.id);
-          const aiResponse = {
-            id: Date.now() + 2,
-            role: 'assistant',
-            content: extractedTasks.length > 0 
-              ? "I've identified the following tasks from your text:" 
-              : "I couldn't identify any specific tasks in your message. Could you provide more details or a clearer description of the tasks?",
-            timestamp: new Date(),
-            extractedTasks: extractedTasks,
-          };
-          
-          // Save AI response to server
-          saveAIMessage({
-            role: 'assistant',
-            content: aiResponse.content,
+      try {
+        await extractTasks(input);
+        
+        // Wait for the extraction to complete
+        setTimeout(async () => {
+          setMessages(prev => {
+            const filtered = prev.filter(msg => msg.id !== loadingMessage.id);
+            
+            const aiResponse = {
+              id: Date.now() + 2,
+              role: 'assistant',
+              content: extractedTasks.length > 0 
+                ? "I've identified the following tasks from your text:" 
+                : "I couldn't identify any specific tasks in your message. Could you provide more details or a clearer description of the tasks?",
+              timestamp: new Date(),
+              extractedTasks: extractedTasks,
+            };
+            
+            // Save AI response to server
+            saveAIMessage({
+              role: 'assistant',
+              content: aiResponse.content,
+            });
+            
+            return [...filtered, aiResponse];
           });
-          
-          return [...filtered, aiResponse];
-        });
-      }, 1000);
+        }, 1000);
+      } catch (error) {
+        console.error("Error extracting tasks:", error);
+      }
     } catch (error) {
       console.error('Error processing message:', error);
       

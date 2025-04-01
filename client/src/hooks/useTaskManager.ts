@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Task, TaskInput, TaskStatus, ExtractedTask } from '@/lib/types';
+import { Task, TaskInput, TaskStatus, TaskStatusType, ExtractedTask } from '@/lib/types';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
@@ -11,10 +11,10 @@ export function useTaskManager() {
 
   // Fetch all tasks
   const { 
-    data: tasks = [], 
+    data: tasks = [] as Task[], 
     isLoading: tasksLoading,
     error: tasksError 
-  } = useQuery({
+  } = useQuery<Task[]>({
     queryKey: ['/api/tasks'],
   });
 
@@ -27,12 +27,12 @@ export function useTaskManager() {
   });
 
   // Group tasks by status
-  const todoTasks = tasks.filter(task => task.status === TaskStatus.TODO);
-  const inProgressTasks = tasks.filter(task => task.status === TaskStatus.IN_PROGRESS);
-  const completedTasks = tasks.filter(task => task.status === TaskStatus.COMPLETED);
+  const todoTasks: Task[] = tasks.filter((task: Task) => task.status === TaskStatus.TODO);
+  const inProgressTasks: Task[] = tasks.filter((task: Task) => task.status === TaskStatus.IN_PROGRESS);
+  const completedTasks: Task[] = tasks.filter((task: Task) => task.status === TaskStatus.COMPLETED);
 
   // AI-generated tasks
-  const aiGeneratedTasks = tasks.filter(task => task.isAiGenerated);
+  const aiGeneratedTasks: Task[] = tasks.filter((task: Task) => task.isAiGenerated);
 
   // Create task mutation
   const createTaskMutation = useMutation({
@@ -108,7 +108,8 @@ export function useTaskManager() {
   const extractTasksMutation = useMutation({
     mutationFn: async (text: string) => {
       const res = await apiRequest('POST', '/api/extract-tasks', { text });
-      return res.json();
+      const data = await res.json();
+      return data;
     },
     onError: (error) => {
       toast({
@@ -120,7 +121,7 @@ export function useTaskManager() {
   });
 
   // Handle move task between statuses
-  const moveTask = useCallback((taskId: number, newStatus: string) => {
+  const moveTask = useCallback((taskId: number, newStatus: TaskStatusType) => {
     updateTaskMutation.mutate({ 
       id: taskId, 
       data: { status: newStatus } 
