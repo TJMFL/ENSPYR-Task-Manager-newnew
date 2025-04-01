@@ -122,39 +122,33 @@ function Router() {
       <Route path="/auth">
         {isAuthenticated ? <Redirect to="/dashboard" /> : <Login />}
       </Route>
-      <Route path="/">
+      <Route path="/" exact>
         {isAuthenticated ? <Redirect to="/dashboard" /> : <Redirect to="/auth" />}
       </Route>
       <Route path="/dashboard">
-        <ProtectedRoute>
-          <Dashboard />
-        </ProtectedRoute>
+        {isAuthenticated ? <Dashboard /> : <Redirect to="/auth" />}
       </Route>
       <Route path="/tasks">
-        <ProtectedRoute>
-          <TaskBoard />
-        </ProtectedRoute>
+        {isAuthenticated ? <TaskBoard /> : <Redirect to="/auth" />}
       </Route>
       <Route path="/ai-assistant">
-        <ProtectedRoute>
-          <AIAssistant />
-        </ProtectedRoute>
+        {isAuthenticated ? <AIAssistant /> : <Redirect to="/auth" />}
       </Route>
       <Route path="/projects">
-        <ProtectedRoute>
+        {isAuthenticated ? (
           <div className="p-6">
             <h1 className="text-2xl font-bold mb-4">Projects</h1>
             <p>Projects page coming soon...</p>
           </div>
-        </ProtectedRoute>
+        ) : <Redirect to="/auth" />}
       </Route>
       <Route path="/settings">
-        <ProtectedRoute>
+        {isAuthenticated ? (
           <div className="p-6">
             <h1 className="text-2xl font-bold mb-4">Settings</h1>
             <p>Settings page coming soon...</p>
           </div>
-        </ProtectedRoute>
+        ) : <Redirect to="/auth" />}
       </Route>
       <Route component={NotFound} />
     </Switch>
