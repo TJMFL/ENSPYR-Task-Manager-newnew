@@ -1,20 +1,40 @@
-import { Switch, Route, useLocation, Redirect } from "wouter";
+import { Switch, Route, useLocation, Redirect, Link } from "wouter";
 import { DragDropContext } from 'react-beautiful-dnd';
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
+import { useToast } from "@/hooks/use-toast";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import TaskBoard from "@/pages/TaskBoard";
 import AIAssistant from "@/pages/AIAssistant";
 import Login from "@/pages/Login";
+import Logout from "@/pages/Logout";
 import Sidebar from "@/components/Sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut } from "lucide-react";
 import { useState, ReactNode } from "react";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import LoginLink from '@/components/LoginLink';
 
 function MobileHeader({ toggleSidebar }: { toggleSidebar: () => void }) {
+  const { user, logout } = useAuth();
+  const { toast } = useToast();
+  const [_, setLocation] = useLocation();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setLocation('/auth');
+    } catch (error) {
+      toast({
+        title: 'Logout Failed',
+        description: 'Could not log out. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <div className="md:hidden bg-white w-full border-b border-gray-200 p-4 flex items-center justify-between">
       <div className="flex items-center">
@@ -28,7 +48,14 @@ function MobileHeader({ toggleSidebar }: { toggleSidebar: () => void }) {
           <h1 className="text-lg font-semibold">AI Task Manager</h1>
         </div>
       </div>
-      <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white">JD</div>
+      {user ? (
+        <Link href="/logout" className="flex items-center space-x-1 text-sm text-gray-600 hover:text-gray-900">
+          <LogOut className="h-4 w-4" />
+          <span>Logout</span>
+        </Link>
+      ) : (
+        <Link href="/auth" className="text-sm text-primary font-medium">Login</Link>
+      )}
     </div>
   );
 }
@@ -106,12 +133,34 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
+  const [_, navigate] = useLocation();
   
   // Show loading state while checking authentication
   if (isLoading) {
     return <div className="flex items-center justify-center h-screen">
       <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
     </div>;
+  }
+  
+  // Forced login link for any page if cookie issues or technical problems
+  if (!isAuthenticated && window.location.pathname !== '/auth' && window.location.pathname !== '/login') {
+    return (
+      <>
+        <LoginLink />
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center p-6 max-w-md mx-auto">
+            <h2 className="text-2xl font-bold mb-4">Authentication Required</h2>
+            <p className="mb-4">You need to be logged in to access this page.</p>
+            <button
+              onClick={() => navigate('/auth')}
+              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+            >
+              Go to Login Page
+            </button>
+          </div>
+        </div>
+      </>
+    );
   }
   
   return (
@@ -122,7 +171,10 @@ function Router() {
       <Route path="/auth">
         {isAuthenticated ? <Redirect to="/dashboard" /> : <Login />}
       </Route>
-      <Route path="/" exact>
+      <Route path="/logout">
+        <Logout />
+      </Route>
+      <Route path="/">
         {isAuthenticated ? <Redirect to="/dashboard" /> : <Redirect to="/auth" />}
       </Route>
       <Route path="/dashboard">

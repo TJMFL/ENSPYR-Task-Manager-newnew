@@ -1,16 +1,22 @@
 import React from 'react';
 import { Link, useLocation } from 'wouter';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/lib/auth';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import {
   ClipboardList,
   Home,
   Zap,
   FolderKanban,
   Settings,
+  LogOut,
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
   const [location] = useLocation();
+  const { user, logout } = useAuth();
+  const { toast } = useToast();
 
   // Define navigation items
   const navItems = [
@@ -71,13 +77,22 @@ const Sidebar: React.FC = () => {
       <div className="p-4">
         <div className="flex items-center space-x-3 mb-3">
           <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white">
-            JD
+            {user?.username?.[0]?.toUpperCase() || 'U'}
           </div>
           <div>
-            <p className="text-sm font-medium">John Doe</p>
-            <p className="text-xs text-gray-400">john@example.com</p>
+            <p className="text-sm font-medium">{user?.username || 'User'}</p>
           </div>
         </div>
+        <Link href="/logout">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="w-full text-white border-gray-700 hover:bg-gray-800 hover:text-white"
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            Logout
+          </Button>
+        </Link>
       </div>
     </div>
   );
