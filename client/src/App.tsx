@@ -12,7 +12,7 @@ import Sidebar from "@/components/Sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Menu, X } from "lucide-react";
 import { useState, ReactNode } from "react";
-import { AuthProvider, useAuth } from "@/lib/auth.tsx";
+import { AuthProvider, useAuth } from "@/lib/auth";
 
 function MobileHeader({ toggleSidebar }: { toggleSidebar: () => void }) {
   return (
@@ -90,12 +90,14 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   const [_, setLocation] = useLocation();
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    return <div className="flex items-center justify-center h-screen">
+      <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
+    </div>;
   }
 
   if (!isAuthenticated) {
-    // Redirect to login
-    setLocation("/login");
+    // Redirect to auth page
+    setLocation("/auth");
     return null;
   }
 
@@ -103,15 +105,25 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 }
 
 function Router() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+  
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-screen">
+      <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
+    </div>;
+  }
   
   return (
     <Switch>
       <Route path="/login">
         {isAuthenticated ? <Redirect to="/dashboard" /> : <Login />}
       </Route>
+      <Route path="/auth">
+        {isAuthenticated ? <Redirect to="/dashboard" /> : <Login />}
+      </Route>
       <Route path="/">
-        <Redirect to="/dashboard" />
+        {isAuthenticated ? <Redirect to="/dashboard" /> : <Redirect to="/auth" />}
       </Route>
       <Route path="/dashboard">
         <ProtectedRoute>
