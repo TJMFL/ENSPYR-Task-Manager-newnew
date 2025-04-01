@@ -1,14 +1,32 @@
-import express, { type Express, Request, Response } from "express";
+import express, { type Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
   taskValidator, 
   insertTaskSchema, 
   insertAiMessageSchema,
+  insertUserSchema,
   TaskStatus
 } from "@shared/schema";
 import { extractTasksFromText } from "./ai";
-import { ValidationError, fromZodError } from "zod-validation-error";
+import { ZodError } from "zod";
+import bcrypt from "bcrypt";
+
+// Define type for Request with session
+declare module 'express-session' {
+  interface SessionData {
+    userId?: number;
+    username?: string;
+  }
+}
+
+// Middleware to check if user is authenticated
+const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+  if (req.session.userId) {
+    return next();
+  }
+  res.status(401).json({ message: "Unauthorized" });
+};
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create an API router
@@ -48,11 +66,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const task = await storage.createTask(taskData);
       res.status(201).json(task);
     } catch (error) {
-      if (error instanceof Error) {
-        const validationError = fromZodError(error);
-        res.status(400).json({ message: "Invalid task data", error: validationError.message });
+      if (error instanceof ZodError) {
+        res.status(400).json({ 
+          message: "Invalid task data", 
+          error: error.errors.map(e => e.message).join(', ') 
+        });
       } else {
-        res.status(500).json({ message: "Failed to create task", error: "Unknown error" });
+        res.status(500).json({ message: "Failed to create task", error: (error as Error).message });
       }
     }
   });
@@ -74,11 +94,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedTask = await storage.updateTask(id, updateData);
       res.json(updatedTask);
     } catch (error) {
-      if (error instanceof Error) {
-        const validationError = fromZodError(error);
-        res.status(400).json({ message: "Invalid task data", error: validationError.message });
+      if (error instanceof ZodError) {
+        res.status(400).json({ 
+          message: "Invalid task data", 
+          error: error.errors.map(e => e.message).join(', ') 
+        });
       } else {
-        res.status(500).json({ message: "Failed to update task", error: "Unknown error" });
+        res.status(500).json({ message: "Failed to update task", error: (error as Error).message });
       }
     }
   });
@@ -142,11 +164,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const message = await storage.createAIMessage(messageData);
       res.status(201).json(message);
     } catch (error) {
-      if (error instanceof Error) {
-        const validationError = fromZodError(error);
-        res.status(400).json({ message: "Invalid message data", error: validationError.message });
+      if (error instanceof ZodError) {
+        res.status(400).json({ 
+          message: "Invalid message data", 
+          error: error.errors.map(e => e.message).join(', ') 
+        });
       } else {
-        res.status(500).json({ message: "Failed to create message", error: "Unknown error" });
+        res.status(500).json({ message: "Failed to create message", error: (error as Error).message });
       }
     }
   });
@@ -167,6 +191,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Auth endpoints
+  apiRouter.post("/auth/register", async (req: Request, res: Response) => {
+    try {
+      const userData = insertUserSchema.parse(req.body);
+      
+      // Check if username already exists
+      const existingUser = await storage.getUserByUsername(userData.username);
+      if (existingUser) {
+        return res.status(409).json({ message: "Username already exists" });
+      }
+      
+      // Hash password
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(userData.password, salt);
+      
+      // Create user with hashed password
+      const user = await storage.createUser({
+        ...userData,
+        password: hashedPassword
+      });
+      
+      // Save user info in session
+      req.session.userId = user.id;
+      req.session.username = user.username;
+      
+      // Return user info (excluding password)
+      res.status(201).json({
+        id: user.id,
+        username: user.username
+      });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({ 
+          message: "Invalid user data", 
+          error: error.errors.map(e => e.message).join(', ') 
+        });
+      } else {
+        res.status(500).json({ message: "Failed to register user", error: (error as Error).message });
+      }
+    }
+  });
+  
+  apiRouter.post("/auth/login", async (req: Request, res: Response) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
+      }
+      
+      // Find user by username
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      // Verify password
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+      
+      // Save user info in session
+      req.session.userId = user.id;
+      req.session.username = user.username;
+      
+      // Return user info (excluding password)
+      res.json({
+        id: user.id,
+        username: user.username
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Login failed", error: (error as Error).message });
+    }
+  });
+  
+  apiRouter.post("/auth/logout", (req: Request, res: Response) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Failed to logout", error: err.message });
+      }
+      res.status(200).json({ message: "Logged out successfully" });
+    });
+  });
+  
+  apiRouter.get("/auth/user", (req: Request, res: Response) => {
+    if (req.session.userId) {
+      return res.json({
+        id: req.session.userId,
+        username: req.session.username
+      });
+    }
+    res.status(401).json({ message: "Not authenticated" });
+  });
+
+  // Protect task-related routes with authentication middleware
+  apiRouter.use(['/tasks', '/task-stats', '/ai-messages', '/extract-tasks'], isAuthenticated);
+  
   // Register API routes
   app.use("/api", apiRouter);
 

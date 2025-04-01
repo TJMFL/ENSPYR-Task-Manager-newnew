@@ -1,4 +1,4 @@
-import { Switch, Route, useLocation } from "wouter";
+import { Switch, Route, useLocation, Redirect } from "wouter";
 import { DragDropContext } from 'react-beautiful-dnd';
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -7,10 +7,12 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/Dashboard";
 import TaskBoard from "@/pages/TaskBoard";
 import AIAssistant from "@/pages/AIAssistant";
+import Login from "@/pages/Login";
 import Sidebar from "@/components/Sidebar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useState, ReactNode } from "react";
+import { AuthProvider, useAuth } from "@/lib/auth.tsx";
 
 function MobileHeader({ toggleSidebar }: { toggleSidebar: () => void }) {
   return (
@@ -82,36 +84,94 @@ function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
+// Protected Route component
+function ProtectedRoute({ children }: { children: ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
+  const [_, setLocation] = useLocation();
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
+
+  if (!isAuthenticated) {
+    // Redirect to login
+    setLocation("/login");
+    return null;
+  }
+
+  return <>{children}</>;
+}
+
 function Router() {
+  const { isAuthenticated } = useAuth();
+  
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/tasks" component={TaskBoard} />
-      <Route path="/ai-assistant" component={AIAssistant} />
+      <Route path="/login">
+        {isAuthenticated ? <Redirect to="/dashboard" /> : <Login />}
+      </Route>
+      <Route path="/">
+        <Redirect to="/dashboard" />
+      </Route>
+      <Route path="/dashboard">
+        <ProtectedRoute>
+          <Dashboard />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/tasks">
+        <ProtectedRoute>
+          <TaskBoard />
+        </ProtectedRoute>
+      </Route>
+      <Route path="/ai-assistant">
+        <ProtectedRoute>
+          <AIAssistant />
+        </ProtectedRoute>
+      </Route>
       <Route path="/projects">
-        <div className="p-6">
-          <h1 className="text-2xl font-bold mb-4">Projects</h1>
-          <p>Projects page coming soon...</p>
-        </div>
+        <ProtectedRoute>
+          <div className="p-6">
+            <h1 className="text-2xl font-bold mb-4">Projects</h1>
+            <p>Projects page coming soon...</p>
+          </div>
+        </ProtectedRoute>
       </Route>
       <Route path="/settings">
-        <div className="p-6">
-          <h1 className="text-2xl font-bold mb-4">Settings</h1>
-          <p>Settings page coming soon...</p>
-        </div>
+        <ProtectedRoute>
+          <div className="p-6">
+            <h1 className="text-2xl font-bold mb-4">Settings</h1>
+            <p>Settings page coming soon...</p>
+          </div>
+        </ProtectedRoute>
       </Route>
       <Route component={NotFound} />
     </Switch>
   );
 }
 
+function LayoutContainer({ children }: { children: ReactNode }) {
+  const { isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) {
+    return <>{children}</>;
+  }
+  
+  return (
+    <Layout>
+      {children}
+    </Layout>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Layout>
-        <Router />
-      </Layout>
-      <Toaster />
+      <AuthProvider>
+        <LayoutContainer>
+          <Router />
+        </LayoutContainer>
+        <Toaster />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
