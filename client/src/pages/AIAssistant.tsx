@@ -1,0 +1,265 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Zap, SendHorizontal } from 'lucide-react';
+import { useTaskManager } from '@/hooks/useTaskManager';
+import { saveAIMessage, getAIMessages } from '@/lib/openai';
+import ChatMessage from '@/components/ChatMessage';
+import NewTaskDialog from '@/components/NewTaskDialog';
+import { ExtractedTask, TaskInput, TaskStatus } from '@/lib/types';
+
+const AIAssistant: React.FC = () => {
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState<any[]>([]);
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<ExtractedTask | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  const { 
+    extractTasks, 
+    extractedTasks, 
+    isExtracting,
+    createTask,
+    isPending
+  } = useTaskManager();
+
+  // Fetch initial messages
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const fetchedMessages = await getAIMessages(10);
+        if (fetchedMessages.length === 0) {
+          // Add a welcome message if no messages exist
+          const welcomeMessage = {
+            id: 0,
+            role: 'system',
+            content: "Hello! I can help you extract tasks from emails or messages. Just paste your text below, and I'll identify actionable items.",
+            timestamp: new Date(),
+          };
+          setMessages([welcomeMessage]);
+          await saveAIMessage({
+            role: 'system',
+            content: welcomeMessage.content,
+          });
+        } else {
+          setMessages(fetchedMessages);
+        }
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+      }
+    };
+    
+    fetchMessages();
+  }, []);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Handle form submission
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+    
+    // Add user message to UI
+    const userMessage = {
+      id: Date.now(),
+      role: 'user',
+      content: input,
+      timestamp: new Date(),
+    };
+    
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    
+    try {
+      // Save user message to server
+      await saveAIMessage({
+        role: 'user',
+        content: input,
+      });
+      
+      // Show loading message
+      const loadingMessage = {
+        id: Date.now() + 1,
+        role: 'assistant',
+        content: 'Analyzing your message...',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, loadingMessage]);
+      
+      // Extract tasks
+      extractTasks(input);
+      
+      // Remove loading message and add response
+      setTimeout(async () => {
+        setMessages(prev => {
+          const filtered = prev.filter(msg => msg.id !== loadingMessage.id);
+          const aiResponse = {
+            id: Date.now() + 2,
+            role: 'assistant',
+            content: extractedTasks.length > 0 
+              ? "I've identified the following tasks from your text:" 
+              : "I couldn't identify any specific tasks in your message. Could you provide more details or a clearer description of the tasks?",
+            timestamp: new Date(),
+            extractedTasks: extractedTasks,
+          };
+          
+          // Save AI response to server
+          saveAIMessage({
+            role: 'assistant',
+            content: aiResponse.content,
+          });
+          
+          return [...filtered, aiResponse];
+        });
+      }, 1000);
+    } catch (error) {
+      console.error('Error processing message:', error);
+      
+      // Show error message
+      setMessages(prev => {
+        const errorMessage = {
+          id: Date.now() + 2,
+          role: 'assistant',
+          content: 'Sorry, I encountered an error while processing your message. Please try again.',
+          timestamp: new Date(),
+        };
+        
+        // Save error message to server
+        saveAIMessage({
+          role: 'assistant',
+          content: errorMessage.content,
+        });
+        
+        return [...prev, errorMessage];
+      });
+    }
+  };
+
+  // Handle adding a single task
+  const handleAddTask = (task: ExtractedTask) => {
+    const taskInput: TaskInput = {
+      ...task,
+      status: TaskStatus.TODO,
+      isAiGenerated: 1,
+      source: 'AI Assistant'
+    };
+    
+    createTask(taskInput);
+  };
+
+  // Handle adding all tasks
+  const handleAddAllTasks = (tasks: ExtractedTask[]) => {
+    tasks.forEach(task => {
+      const taskInput: TaskInput = {
+        ...task,
+        status: TaskStatus.TODO,
+        isAiGenerated: 1,
+        source: 'AI Assistant'
+      };
+      
+      createTask(taskInput);
+    });
+  };
+
+  // Handle editing a task
+  const handleEditTask = (task: ExtractedTask) => {
+    setEditingTask(task);
+    setIsTaskDialogOpen(true);
+  };
+
+  // Handle task dialog close
+  const handleCloseTaskDialog = () => {
+    setIsTaskDialogOpen(false);
+    setEditingTask(null);
+  };
+
+  // Handle edited task submission
+  const handleTaskSubmit = (data: TaskInput) => {
+    const taskInput: TaskInput = {
+      ...data,
+      status: TaskStatus.TODO,
+      isAiGenerated: 1,
+      source: 'AI Assistant'
+    };
+    
+    createTask(taskInput);
+    handleCloseTaskDialog();
+  };
+
+  return (
+    <div className="p-6">
+      <div className="flex items-center mb-6">
+        <h1 className="text-2xl font-bold">AI Assistant</h1>
+      </div>
+      
+      <div className="bg-white rounded-lg shadow h-[calc(100vh-12rem)] flex flex-col">
+        <div className="p-5 border-b border-gray-200">
+          <h2 className="text-lg font-semibold flex items-center">
+            <Zap className="h-5 w-5 mr-2 text-accent" />
+            AI Assistant
+          </h2>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-5 space-y-4" id="chatMessages">
+          {messages.map((message) => (
+            <ChatMessage 
+              key={message.id}
+              role={message.role}
+              content={message.content}
+              extractedTasks={message.extractedTasks}
+              onAddTask={handleAddTask}
+              onAddAllTasks={handleAddAllTasks}
+              onEditTask={handleEditTask}
+            />
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+        
+        <div className="p-4 border-t border-gray-200">
+          <form className="flex items-center" onSubmit={handleSubmit}>
+            <Textarea
+              className="flex-1 border border-gray-300 rounded-lg px-4 py-2 mr-2 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              placeholder="Paste email or message here..."
+              rows={2}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              disabled={isExtracting}
+            />
+            <Button 
+              type="submit" 
+              className="bg-primary hover:bg-blue-600 p-2 rounded-lg"
+              disabled={isExtracting || !input.trim()}
+            >
+              <SendHorizontal className="h-5 w-5" />
+            </Button>
+          </form>
+        </div>
+      </div>
+
+      {/* Edit Task Dialog */}
+      {editingTask && (
+        <NewTaskDialog 
+          isOpen={isTaskDialogOpen} 
+          onClose={handleCloseTaskDialog} 
+          onSubmit={handleTaskSubmit}
+          editTask={{
+            id: 0,
+            title: editingTask.title,
+            description: editingTask.description,
+            priority: editingTask.priority,
+            dueDate: editingTask.dueDate ? new Date(editingTask.dueDate) : undefined,
+            category: editingTask.category,
+            status: TaskStatus.TODO,
+            createdAt: new Date()
+          }}
+          isSubmitting={isPending}
+        />
+      )}
+    </div>
+  );
+};
+
+export default AIAssistant;
