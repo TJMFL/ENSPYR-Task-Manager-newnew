@@ -121,15 +121,23 @@ export function useTaskManager() {
     string
   >({
     mutationFn: async (text: string) => {
+      // Add a small delay to ensure any previous state updates have processed
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Make API request to extract tasks
       const res = await apiRequest('POST', '/api/extract-tasks', { text });
       const data = await res.json();
+      
+      console.log("Extracted tasks:", data);
       return data;
     },
     onSuccess: (data) => {
-      // Clear any previous extraction data that might be lingering
+      // Log success for debugging
+      console.log("Task extraction successful:", data);
       return data;
     },
     onError: (error) => {
+      console.error("Task extraction error:", error);
       toast({
         title: "Failed to extract tasks",
         description: error.message,

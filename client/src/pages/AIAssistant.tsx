@@ -79,33 +79,49 @@ const AIAssistant: React.FC = () => {
     setMessages(prev => [...prev, loadingMessage]);
     
     try {
-      // Trigger task extraction
-      await extractTasks(userInput);
+      // Trigger task extraction and wait for it to complete
+      // We use a custom Promise to ensure tasks are properly extracted
+      const result = await new Promise<ExtractedTask[]>((resolve, reject) => {
+        extractTasks(userInput);
+        
+        // Check every 300ms if tasks have been extracted
+        const checkInterval = setInterval(() => {
+          if (extractedTasks && extractedTasks.length > 0) {
+            clearInterval(checkInterval);
+            clearTimeout(timeoutId);
+            resolve(extractedTasks);
+          }
+        }, 300);
+        
+        // Set a timeout to prevent indefinite waiting
+        const timeoutId = setTimeout(() => {
+          clearInterval(checkInterval);
+          // If no tasks found after 5 seconds, resolve with empty array
+          resolve(extractedTasks || []);
+        }, 5000);
+      });
       
-      // Wait to ensure state is updated
-      setTimeout(() => {
-        // Create AI response with extracted tasks
-        const aiResponse: Message = {
-          id: Date.now() + 2,
-          role: 'assistant',
-          content: extractedTasks.length > 0 
-            ? "I've identified the following tasks from your text:" 
-            : "I couldn't identify any specific tasks in your message. Could you provide more details or a clearer description of the tasks?",
-          timestamp: new Date(),
-          extractedTasks: extractedTasks,
-        };
-        
-        // Save AI response to server
-        saveAIMessage({
-          role: 'assistant',
-          content: aiResponse.content,
-        });
-        
-        // Update messages state, removing loading message
-        setMessages(prev => {
-          return prev.filter(msg => msg.id !== loadingMessage.id).concat(aiResponse);
-        });
-      }, 1000);
+      // Create AI response with extracted tasks
+      const aiResponse: Message = {
+        id: Date.now() + 2,
+        role: 'assistant',
+        content: result.length > 0 
+          ? "I've identified the following tasks from your text:" 
+          : "I couldn't identify any specific tasks in your message. Could you provide more details or a clearer description of the tasks?",
+        timestamp: new Date(),
+        extractedTasks: result,
+      };
+      
+      // Save AI response to server
+      await saveAIMessage({
+        role: 'assistant',
+        content: aiResponse.content,
+      });
+      
+      // Update messages state, removing loading message
+      setMessages(prev => {
+        return prev.filter(msg => msg.id !== loadingMessage.id).concat(aiResponse);
+      });
     } catch (error) {
       console.error('Error extracting tasks:', error);
       
