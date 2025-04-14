@@ -12,6 +12,7 @@ import {
   Settings,
   LogOut,
   Calendar,
+  MapPin,
 } from 'lucide-react';
 
 const Sidebar: React.FC = () => {
@@ -40,6 +41,11 @@ const Sidebar: React.FC = () => {
       title: 'AI Assistant', 
       icon: <Zap className="h-5 w-5 mr-3" />, 
       path: '/ai-assistant'
+    },
+    { 
+      title: 'Locations', 
+      icon: <MapPin className="h-5 w-5 mr-3" />, 
+      path: '/locations'
     },
     { 
       title: 'Projects', 

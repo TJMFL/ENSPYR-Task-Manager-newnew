@@ -9,6 +9,7 @@ import Dashboard from "@/pages/Dashboard";
 import TaskBoard from "@/pages/TaskBoard";
 import AIAssistant from "@/pages/AIAssistant";
 import CalendarView from "@/pages/CalendarView";
+import LocationsPage from "@/pages/LocationsPage";
 import Login from "@/pages/Login";
 import Logout from "@/pages/Logout";
 import Sidebar from "@/components/Sidebar";
@@ -189,6 +190,9 @@ function Router() {
       </Route>
       <Route path="/calendar">
         {isAuthenticated ? <CalendarView /> : <Redirect to="/auth" />}
+      </Route>
+      <Route path="/locations">
+        {isAuthenticated ? <LocationsPage /> : <Redirect to="/auth" />}
       </Route>
       <Route path="/projects">
         {isAuthenticated ? (
