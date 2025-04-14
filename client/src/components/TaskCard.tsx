@@ -19,6 +19,8 @@ interface TaskCardProps {
 }
 
 const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, onDelete, className, isDragging }) => {
+  const [showDetails, setShowDetails] = useState(false);
+  
   // Get border color based on priority
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -61,6 +63,21 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, onDelete, className,
     e.stopPropagation();
     onDelete?.(task);
   };
+  
+  const toggleDetails = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowDetails(!showDetails);
+  };
+  
+  const handleTimeUpdated = () => {
+    // This will be called when time tracking is updated
+    // We could refresh data here, but the useTaskManager hook already handles cache invalidation
+  };
+  
+  const handlePhotoUploaded = () => {
+    // This will be called when a photo is uploaded or removed
+    // We could refresh data here, but the useTaskManager hook already handles cache invalidation
+  };
 
   return (
     <Card 
@@ -100,13 +117,22 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, onDelete, className,
           </p>
         )}
         
-        <div className="flex justify-between items-center text-xs text-gray-500">
+        <div className="flex justify-between items-center text-xs text-gray-500 mb-2">
           <div>
             <span>{formattedDueDate}</span>
             {task.category && <span className="ml-2">{task.category}</span>}
+            {task.locationId && <span className="ml-2">📍 Location</span>}
           </div>
           
           <div className="flex space-x-1">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6" 
+              onClick={toggleDetails}
+            >
+              {showDetails ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+            </Button>
             <Button 
               variant="ghost" 
               size="icon" 
@@ -125,6 +151,16 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, onDelete, className,
             </Button>
           </div>
         </div>
+        
+        {/* Show time tracking and photo upload features when expanded */}
+        {showDetails && (
+          <div className="mt-2 space-y-3">
+            <Separator />
+            <TimeTracker task={task} onTimeUpdated={handleTimeUpdated} />
+            <Separator />
+            <PhotoUpload task={task} onPhotoUploaded={handlePhotoUploaded} />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

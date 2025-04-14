@@ -64,7 +64,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ task, onPhotoUploaded }) => {
           photoUrl: base64data
         };
         
-        await updateTask(task.id, updatedTask);
+        await updateTask({ id: task.id, data: updatedTask });
         setPhotoUrl(base64data);
         
         toast({
@@ -95,7 +95,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({ task, onPhotoUploaded }) => {
         photoUrl: null
       };
       
-      await updateTask(task.id, updatedTask);
+      await updateTask({ id: task.id, data: updatedTask });
       setPhotoUrl(null);
       
       toast({
