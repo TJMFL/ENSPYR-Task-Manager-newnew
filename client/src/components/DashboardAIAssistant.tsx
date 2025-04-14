@@ -4,6 +4,7 @@ import { SendHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import ChatMessage from '@/components/ChatMessage';
+import VoiceInput from '@/components/VoiceInput';
 import { ExtractedTask, TaskInput, TaskStatus } from '@/lib/types';
 import { useTaskManager } from '@/hooks/useTaskManager';
 import { apiRequest } from '@/lib/queryClient';

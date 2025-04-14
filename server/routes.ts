@@ -6,7 +6,10 @@ import {
   insertTaskSchema, 
   insertAiMessageSchema,
   insertUserSchema,
-  TaskStatus
+  insertLocationSchema,
+  insertReportSchema,
+  TaskStatus,
+  LocationType
 } from "@shared/schema";
 import { extractTasksFromText } from "./ai";
 import { ZodError } from "zod";
@@ -31,6 +34,16 @@ const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create an API router
   const apiRouter = express.Router();
+  
+  // Protect routes with authentication middleware
+  apiRouter.use([
+    '/tasks', 
+    '/task-stats', 
+    '/ai-messages', 
+    '/extract-tasks',
+    '/locations',
+    '/reports'
+  ], isAuthenticated);
 
   // Tasks endpoints
   apiRouter.get("/tasks", async (req: Request, res: Response) => {
@@ -292,9 +305,413 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(401).json({ message: "Not authenticated" });
   });
 
-  // Protect task-related routes with authentication middleware
-  apiRouter.use(['/tasks', '/task-stats', '/ai-messages', '/extract-tasks'], isAuthenticated);
-  
+  // Location endpoints
+  apiRouter.get("/locations", async (req: Request, res: Response) => {
+    try {
+      const locations = await storage.getAllLocations();
+      res.json(locations);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch locations", error: (error as Error).message });
+    }
+  });
+
+  apiRouter.get("/locations/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid location ID" });
+      }
+
+      const location = await storage.getLocationById(id);
+      if (!location) {
+        return res.status(404).json({ message: "Location not found" });
+      }
+
+      res.json(location);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch location", error: (error as Error).message });
+    }
+  });
+
+  apiRouter.get("/locations/type/:type", async (req: Request, res: Response) => {
+    try {
+      const type = req.params.type;
+      if (!Object.values(LocationType).includes(type as any)) {
+        return res.status(400).json({ message: "Invalid location type" });
+      }
+
+      const locations = await storage.getLocationsByType(type);
+      res.json(locations);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch locations by type", error: (error as Error).message });
+    }
+  });
+
+  apiRouter.post("/locations", async (req: Request, res: Response) => {
+    try {
+      // Set userId from session
+      const locationData = {
+        ...req.body,
+        userId: req.session.userId
+      };
+      
+      // Validate the input data
+      const validatedData = insertLocationSchema.parse(locationData);
+      
+      // Create the location in the database
+      const location = await storage.createLocation(validatedData);
+      res.status(201).json(location);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({ 
+          message: "Invalid location data", 
+          error: error.errors.map(e => e.message).join(', ') 
+        });
+      } else {
+        res.status(500).json({ message: "Failed to create location", error: (error as Error).message });
+      }
+    }
+  });
+
+  apiRouter.patch("/locations/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid location ID" });
+      }
+
+      const location = await storage.getLocationById(id);
+      if (!location) {
+        return res.status(404).json({ message: "Location not found" });
+      }
+
+      // Validate the update data
+      const validData = insertLocationSchema.partial().parse(req.body);
+      const updatedLocation = await storage.updateLocation(id, validData);
+      res.json(updatedLocation);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({ 
+          message: "Invalid location data", 
+          error: error.errors.map(e => e.message).join(', ') 
+        });
+      } else {
+        res.status(500).json({ message: "Failed to update location", error: (error as Error).message });
+      }
+    }
+  });
+
+  apiRouter.delete("/locations/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid location ID" });
+      }
+
+      const success = await storage.deleteLocation(id);
+      if (!success) {
+        return res.status(404).json({ message: "Location not found" });
+      }
+
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete location", error: (error as Error).message });
+    }
+  });
+
+  // Tasks by location endpoint
+  apiRouter.get("/tasks/by-location/:locationId", async (req: Request, res: Response) => {
+    try {
+      const locationId = parseInt(req.params.locationId);
+      if (isNaN(locationId)) {
+        return res.status(400).json({ message: "Invalid location ID" });
+      }
+
+      const tasks = await storage.getTasksByLocation(locationId);
+      res.json(tasks);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch tasks by location", error: (error as Error).message });
+    }
+  });
+
+  // Today's tasks endpoint
+  apiRouter.get("/tasks/due-today", async (_req: Request, res: Response) => {
+    try {
+      const tasks = await storage.getTasksDueToday();
+      res.json(tasks);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch today's tasks", error: (error as Error).message });
+    }
+  });
+
+  // Report endpoints
+  apiRouter.get("/reports", async (_req: Request, res: Response) => {
+    try {
+      const reports = await storage.getAllReports();
+      res.json(reports);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch reports", error: (error as Error).message });
+    }
+  });
+
+  apiRouter.get("/reports/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid report ID" });
+      }
+
+      const report = await storage.getReportById(id);
+      if (!report) {
+        return res.status(404).json({ message: "Report not found" });
+      }
+
+      res.json(report);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch report", error: (error as Error).message });
+    }
+  });
+
+  apiRouter.get("/reports/date-range", async (req: Request, res: Response) => {
+    try {
+      const startDateParam = req.query.startDate as string;
+      const endDateParam = req.query.endDate as string;
+      
+      if (!startDateParam || !endDateParam) {
+        return res.status(400).json({ message: "Start date and end date are required" });
+      }
+      
+      const startDate = new Date(startDateParam);
+      const endDate = new Date(endDateParam);
+      
+      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+        return res.status(400).json({ message: "Invalid date format" });
+      }
+      
+      const reports = await storage.getReportsByDateRange(startDate, endDate);
+      res.json(reports);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch reports by date range", error: (error as Error).message });
+    }
+  });
+
+  apiRouter.post("/reports", async (req: Request, res: Response) => {
+    try {
+      // Set userId from session
+      const reportData = {
+        ...req.body,
+        userId: req.session.userId
+      };
+      
+      // Validate the input data
+      const validatedData = insertReportSchema.parse(reportData);
+      
+      // Create the report in the database
+      const report = await storage.createReport(validatedData);
+      res.status(201).json(report);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        res.status(400).json({ 
+          message: "Invalid report data", 
+          error: error.errors.map(e => e.message).join(', ') 
+        });
+      } else {
+        res.status(500).json({ message: "Failed to create report", error: (error as Error).message });
+      }
+    }
+  });
+
+  apiRouter.delete("/reports/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid report ID" });
+      }
+
+      const success = await storage.deleteReport(id);
+      if (!success) {
+        return res.status(404).json({ message: "Report not found" });
+      }
+
+      res.status(204).end();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete report", error: (error as Error).message });
+    }
+  });
+
+  // Generate daily report endpoint
+  apiRouter.post("/reports/generate-daily", async (req: Request, res: Response) => {
+    try {
+      const dateParam = req.body.date as string;
+      const date = dateParam ? new Date(dateParam) : new Date();
+      
+      if (isNaN(date.getTime())) {
+        return res.status(400).json({ message: "Invalid date format" });
+      }
+      
+      // Create start and end dates for the day
+      const startDate = new Date(date);
+      startDate.setHours(0, 0, 0, 0);
+      
+      const endDate = new Date(date);
+      endDate.setHours(23, 59, 59, 999);
+      
+      // Get all tasks updated on that day
+      const allTasks = await storage.getAllTasks();
+      const tasksForDay = allTasks.filter(task => {
+        if (task.timeCompleted) {
+          const completedDate = new Date(task.timeCompleted);
+          return completedDate >= startDate && completedDate <= endDate;
+        }
+        return false;
+      });
+
+      // Get tasks still in progress
+      const inProgressTasks = allTasks.filter(task => task.status === TaskStatus.IN_PROGRESS);
+      
+      // Generate report summary
+      let summary = `Daily Report for ${date.toLocaleDateString()}\n\n`;
+      summary += `Completed Tasks: ${tasksForDay.length}\n`;
+      summary += `Tasks In Progress: ${inProgressTasks.length}\n`;
+      
+      // Calculate time spent
+      const totalMinutes = tasksForDay.reduce((total, task) => total + (task.timeSpent || 0), 0);
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      
+      summary += `Total Time Spent: ${hours}h ${minutes}m\n\n`;
+      
+      // Create task details as JSON
+      const tasksSummary = JSON.stringify({
+        completed: tasksForDay.map(task => ({
+          id: task.id,
+          title: task.title,
+          timeSpent: task.timeSpent,
+          location: task.locationId
+        })),
+        inProgress: inProgressTasks.map(task => ({
+          id: task.id,
+          title: task.title,
+          status: task.status
+        }))
+      });
+      
+      // Create the report
+      const reportData = {
+        title: `Daily Report - ${date.toLocaleDateString()}`,
+        type: "daily",
+        startDate,
+        endDate,
+        summary,
+        tasksSummary,
+        userId: req.session.userId
+      };
+      
+      const report = await storage.createReport(reportData);
+      res.status(201).json(report);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to generate daily report", error: (error as Error).message });
+    }
+  });
+
+  // Generate weekly report endpoint
+  apiRouter.post("/reports/generate-weekly", async (req: Request, res: Response) => {
+    try {
+      const dateParam = req.body.date as string;
+      const date = dateParam ? new Date(dateParam) : new Date();
+      
+      if (isNaN(date.getTime())) {
+        return res.status(400).json({ message: "Invalid date format" });
+      }
+      
+      // Create start and end dates for the week
+      const startDate = new Date(date);
+      startDate.setDate(date.getDate() - date.getDay()); // Sunday
+      startDate.setHours(0, 0, 0, 0);
+      
+      const endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + 6); // Saturday
+      endDate.setHours(23, 59, 59, 999);
+      
+      // Get all tasks
+      const allTasks = await storage.getAllTasks();
+      
+      // Get tasks completed during the week
+      const completedTasks = allTasks.filter(task => {
+        if (task.timeCompleted) {
+          const completedDate = new Date(task.timeCompleted);
+          return completedDate >= startDate && completedDate <= endDate;
+        }
+        return false;
+      });
+      
+      // Get tasks still in progress
+      const inProgressTasks = allTasks.filter(task => task.status === TaskStatus.IN_PROGRESS);
+      
+      // Get tasks due in the upcoming week
+      const upcomingDate = new Date(endDate);
+      upcomingDate.setDate(upcomingDate.getDate() + 7);
+      
+      const upcomingTasks = allTasks.filter(task => {
+        if (task.dueDate && task.status !== TaskStatus.COMPLETED) {
+          const dueDate = new Date(task.dueDate);
+          return dueDate > endDate && dueDate <= upcomingDate;
+        }
+        return false;
+      });
+      
+      // Generate report summary
+      let summary = `Weekly Report for ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}\n\n`;
+      summary += `Completed Tasks: ${completedTasks.length}\n`;
+      summary += `Tasks In Progress: ${inProgressTasks.length}\n`;
+      summary += `Upcoming Tasks: ${upcomingTasks.length}\n`;
+      
+      // Calculate time spent
+      const totalMinutes = completedTasks.reduce((total, task) => total + (task.timeSpent || 0), 0);
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      
+      summary += `Total Time Spent: ${hours}h ${minutes}m\n\n`;
+      
+      // Create task details as JSON
+      const tasksSummary = JSON.stringify({
+        completed: completedTasks.map(task => ({
+          id: task.id,
+          title: task.title,
+          timeSpent: task.timeSpent,
+          location: task.locationId
+        })),
+        inProgress: inProgressTasks.map(task => ({
+          id: task.id,
+          title: task.title,
+          status: task.status
+        })),
+        upcoming: upcomingTasks.map(task => ({
+          id: task.id,
+          title: task.title,
+          dueDate: task.dueDate,
+          priority: task.priority
+        }))
+      });
+      
+      // Create the report
+      const reportData = {
+        title: `Weekly Report - ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`,
+        type: "weekly",
+        startDate,
+        endDate,
+        summary,
+        tasksSummary,
+        userId: req.session.userId
+      };
+      
+      const report = await storage.createReport(reportData);
+      res.status(201).json(report);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to generate weekly report", error: (error as Error).message });
+    }
+  });
+
   // Register API routes
   app.use("/api", apiRouter);
 
