@@ -11,19 +11,19 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       colors: {
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        background: "hsl(222 47% 11%)",
+        foreground: "hsl(214 32% 91%)",
         card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
+          DEFAULT: "hsl(222 47% 14%)",
+          foreground: "hsl(214 32% 91%)",
         },
         popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
+          DEFAULT: "hsl(222 47% 14%)",
+          foreground: "hsl(214 32% 91%)",
         },
         primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
+          DEFAULT: "hsl(217 91% 60%)",
+          foreground: "hsl(214 32% 91%)",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
