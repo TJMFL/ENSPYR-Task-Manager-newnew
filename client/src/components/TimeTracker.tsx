@@ -13,7 +13,7 @@ interface TimeTrackerProps {
 
 const TimeTracker: React.FC<TimeTrackerProps> = ({ task, onTimeUpdated }) => {
   const [isRunning, setIsRunning] = useState(false);
-  const [elapsedTime, setElapsedTime] = useState(task.timeSpent || 0); // Total minutes
+  const [elapsedTime, setElapsedTime] = useState<number>(task.timeSpent || 0); // Total minutes
   const startTimeRef = useRef<number | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const { updateTask, isPending } = useTaskManager();
@@ -46,7 +46,7 @@ const TimeTracker: React.FC<TimeTrackerProps> = ({ task, onTimeUpdated }) => {
     timerRef.current = setInterval(() => {
       if (startTimeRef.current) {
         const elapsedMinutes = Math.floor((Date.now() - startTimeRef.current) / 60000);
-        setElapsedTime(prev => (task.timeSpent || 0) + elapsedMinutes);
+        setElapsedTime((prev: number) => (task.timeSpent || 0) + elapsedMinutes);
       }
     }, 60000); // Update every minute
   };
@@ -83,7 +83,7 @@ const TimeTracker: React.FC<TimeTrackerProps> = ({ task, onTimeUpdated }) => {
         timeSpent: elapsedTime
       };
       
-      await updateTask(task.id, updatedTask);
+      await updateTask({ id: task.id, data: updatedTask });
       
       toast({
         title: 'Task Completed',
@@ -111,7 +111,7 @@ const TimeTracker: React.FC<TimeTrackerProps> = ({ task, onTimeUpdated }) => {
         timeSpent: minutes
       };
       
-      await updateTask(task.id, updatedTask);
+      await updateTask({ id: task.id, data: updatedTask });
       
       if (onTimeUpdated) {
         onTimeUpdated();

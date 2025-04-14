@@ -29,6 +29,12 @@ export interface Task {
   isAiGenerated?: number;
   source?: string;
   userId?: number;
+  locationId?: number;
+  timeSpent?: number;
+  timeStarted?: string;
+  timeCompleted?: string;
+  photoUrl?: string;
+  notes?: string;
 }
 
 // Task creation/update interface
@@ -42,6 +48,12 @@ export interface TaskInput {
   isAiGenerated?: number;
   source?: string;
   userId?: number;
+  locationId?: number;
+  timeSpent?: number;
+  timeStarted?: string;
+  timeCompleted?: string;
+  photoUrl?: string | null;
+  notes?: string;
 }
 
 // Extracted task from AI
