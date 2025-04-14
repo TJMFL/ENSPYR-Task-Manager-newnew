@@ -5,6 +5,7 @@ import { Zap, SendHorizontal } from 'lucide-react';
 import { useTaskManager } from '@/hooks/useTaskManager';
 import { saveAIMessage, getAIMessages } from '@/lib/openai';
 import ChatMessage from '@/components/ChatMessage';
+import VoiceInput from '@/components/VoiceInput';
 import NewTaskDialog from '@/components/NewTaskDialog';
 import { ExtractedTask, TaskInput, TaskStatus } from '@/lib/types';
 
@@ -284,13 +285,19 @@ const AIAssistant: React.FC = () => {
               onChange={(e) => setInput(e.target.value)}
               disabled={isExtracting}
             />
-            <Button 
-              type="submit" 
-              className="bg-primary hover:bg-blue-600 p-2 rounded-lg"
-              disabled={isExtracting || !input.trim()}
-            >
-              <SendHorizontal className="h-5 w-5" />
-            </Button>
+            <div className="flex flex-col space-y-2">
+              <VoiceInput 
+                onTranscript={(text) => setInput(prev => prev + ' ' + text)}
+                disabled={isExtracting}
+              />
+              <Button 
+                type="submit" 
+                className="bg-primary hover:bg-blue-600 p-2 rounded-lg"
+                disabled={isExtracting || !input.trim()}
+              >
+                <SendHorizontal className="h-5 w-5" />
+              </Button>
+            </div>
           </form>
         </div>
       </div>

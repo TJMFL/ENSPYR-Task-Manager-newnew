@@ -7,6 +7,14 @@ interface VoiceInputProps {
   disabled?: boolean;
 }
 
+// Add type definitions for Web Speech API
+declare global {
+  interface Window {
+    SpeechRecognition?: any;
+    webkitSpeechRecognition?: any;
+  }
+}
+
 // Browser compatibility check for SpeechRecognition
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 const hasSpeechRecognition = !!SpeechRecognition;

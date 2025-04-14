@@ -292,13 +292,19 @@ const DashboardAIAssistant: React.FC<DashboardAIAssistantProps> = ({ onTasksAdde
             onChange={(e) => setInput(e.target.value)}
             disabled={isExtracting}
           />
-          <Button 
-            type="submit" 
-            className="bg-primary hover:bg-blue-600 p-2 rounded-lg"
-            disabled={isExtracting || !input.trim()}
-          >
-            <SendHorizontal className="h-5 w-5" />
-          </Button>
+          <div className="flex space-x-2">
+            <VoiceInput 
+              onTranscript={(text) => setInput(prev => prev + ' ' + text)}
+              disabled={isExtracting}
+            />
+            <Button 
+              type="submit" 
+              className="bg-primary hover:bg-blue-600 p-2 rounded-lg"
+              disabled={isExtracting || !input.trim()}
+            >
+              <SendHorizontal className="h-5 w-5" />
+            </Button>
+          </div>
         </form>
       </div>
       
