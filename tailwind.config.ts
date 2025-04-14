@@ -14,16 +14,20 @@ export default {
         background: "hsl(222 47% 11%)",
         foreground: "hsl(214 32% 91%)",
         card: {
-          DEFAULT: "hsl(222 47% 14%)",
+          DEFAULT: "hsl(223 47% 14%)",
           foreground: "hsl(214 32% 91%)",
         },
         popover: {
-          DEFAULT: "hsl(222 47% 14%)",
+          DEFAULT: "hsl(223 47% 14%)",
           foreground: "hsl(214 32% 91%)",
         },
         primary: {
           DEFAULT: "hsl(217 91% 60%)",
           foreground: "hsl(214 32% 91%)",
+        },
+        muted: {
+          DEFAULT: "hsl(223 47% 18%)",
+          foreground: "hsl(214 32% 80%)",
         },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",

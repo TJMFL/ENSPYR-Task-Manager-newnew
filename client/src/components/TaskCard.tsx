@@ -20,7 +20,7 @@ interface TaskCardProps {
 
 const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, onDelete, className, isDragging }) => {
   const [showDetails, setShowDetails] = useState(false);
-  
+
   // Get border color based on priority
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -58,22 +58,22 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, onDelete, className,
     e.stopPropagation();
     onClick?.(task);
   };
-  
+
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     onDelete?.(task);
   };
-  
+
   const toggleDetails = (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowDetails(!showDetails);
   };
-  
+
   const handleTimeUpdated = () => {
     // This will be called when time tracking is updated
     // We could refresh data here, but the useTaskManager hook already handles cache invalidation
   };
-  
+
   const handlePhotoUploaded = () => {
     // This will be called when a photo is uploaded or removed
     // We could refresh data here, but the useTaskManager hook already handles cache invalidation
@@ -82,7 +82,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, onDelete, className,
   return (
     <Card 
       className={cn(
-        'border-l-4 mb-3',
+        'border-l-4 mb-3 bg-gray-800 text-white', // Added dark background and white text
         getPriorityColor(task.priority),
         {
           'opacity-50': isDragging,
@@ -107,7 +107,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, onDelete, className,
              task.priority === TaskPriority.MEDIUM ? 'Medium' : 'Low'}
           </Badge>
         </div>
-        
+
         {task.description && (
           <p className={cn(
             "text-sm text-gray-600 mb-3", 
@@ -116,19 +116,19 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, onDelete, className,
             {task.description}
           </p>
         )}
-        
+
         <div className="flex justify-between items-center text-xs text-gray-500 mb-2">
           <div>
             <span>{formattedDueDate}</span>
             {task.category && <span className="ml-2">{task.category}</span>}
             {task.locationId && <span className="ml-2">📍 Location</span>}
           </div>
-          
+
           <div className="flex space-x-1">
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-6 w-6" 
+              className="h-6 w-6 text-white hover:text-gray-200" // Added hover effect
               onClick={toggleDetails}
             >
               {showDetails ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
@@ -136,7 +136,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, onDelete, className,
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-6 w-6" 
+              className="h-6 w-6 text-white hover:text-gray-200" // Added hover effect
               onClick={handleEdit}
             >
               <Edit className="h-3.5 w-3.5" />
@@ -151,7 +151,7 @@ const TaskCard: React.FC<TaskCardProps> = ({ task, onClick, onDelete, className,
             </Button>
           </div>
         </div>
-        
+
         {/* Show time tracking and photo upload features when expanded */}
         {showDetails && (
           <div className="mt-2 space-y-3">

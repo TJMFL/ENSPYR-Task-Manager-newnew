@@ -104,7 +104,7 @@ const CalendarView: React.FC = () => {
         </div>
       </div>
       
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-card rounded-lg shadow p-6">
         {/* Calendar header - weekdays */}
         <div className="grid grid-cols-7 gap-1 mb-2">
           {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (

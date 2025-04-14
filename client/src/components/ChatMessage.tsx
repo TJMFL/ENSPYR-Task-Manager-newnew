@@ -41,7 +41,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
           </svg>
         </div>
-        <div className="ml-3 bg-gray-100 rounded-lg py-3 px-4 max-w-md">
+        <div className="ml-3 bg-card text-card-foreground rounded-lg py-3 px-4 max-w-md">
           <p className="text-sm">{content}</p>
         </div>
       </div>
@@ -55,20 +55,20 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
         </svg>
       </div>
-      <div className="ml-3 bg-gray-100 rounded-lg py-3 px-4 max-w-md">
+      <div className="ml-3 bg-card text-card-foreground rounded-lg py-3 px-4 max-w-md">
         <p className="text-sm mb-3">{content}</p>
-        
+
         {extractedTasks && extractedTasks.length > 0 && (
           <div className="space-y-3">
             {extractedTasks.map((task, idx) => (
-              <Card key={idx} className="bg-white p-3 rounded border border-gray-200">
+              <Card key={idx} className="bg-card text-card-foreground p-3 rounded border border-gray-200">
                 <h4 className="font-medium text-sm">{task.title}</h4>
                 {task.description && (
-                  <p className="text-xs text-gray-600 mt-1">{task.description}</p>
+                  <p className="text-xs text-card-foreground mt-1">{task.description}</p>
                 )}
                 <div className="flex flex-wrap items-center mt-2 text-sm">
                   <div className="mr-4 mb-1">
-                    <span className="text-xs text-gray-500">Due date:</span>
+                    <span className="text-xs text-card-foreground">Due date:</span>
                     <p className="font-medium">
                       {task.dueDate 
                         ? new Date(task.dueDate + 'T00:00:00').toLocaleDateString(undefined, {
@@ -80,7 +80,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                     </p>
                   </div>
                   <div className="mb-1">
-                    <span className="text-xs text-gray-500">Priority:</span>
+                    <span className="text-xs text-card-foreground">Priority:</span>
                     <div className="flex items-center">
                       <div className={`w-2 h-2 rounded-full mr-1 ${
                         task.priority === 'high' ? 'bg-red-500' : 
@@ -98,7 +98,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                   </div>
                   {task.category && (
                     <div className="ml-4 mb-1">
-                      <span className="text-xs text-gray-500">Category:</span>
+                      <span className="text-xs text-card-foreground">Category:</span>
                       <p className="font-medium">{task.category}</p>
                     </div>
                   )}
@@ -122,7 +122,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({
                 </div>
               </Card>
             ))}
-            
+
             {extractedTasks.length > 1 && (
               <Button 
                 className="w-full text-sm mt-2" 
