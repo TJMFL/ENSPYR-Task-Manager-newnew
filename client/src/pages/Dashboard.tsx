@@ -3,14 +3,16 @@ import { DragDropContext, DropResult } from 'react-beautiful-dnd';
 import { 
   ClipboardList, 
   Zap, 
-  CheckCheck, 
-  BarChart, 
-  Plus 
+  Clock, 
+  CalendarClock, 
+  Plus,
+  CheckCheck,
+  BarChart
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { useTaskManager } from '@/hooks/useTaskManager';
-import { TaskStatus, TaskStats } from '@/lib/types';
+import { TaskStatus, TaskStats, Task } from '@/lib/types';
 import StatCard from '@/components/StatCard';
 import TaskColumn from '@/components/TaskColumn';
 import NewTaskDialog from '@/components/NewTaskDialog';
@@ -55,6 +57,52 @@ const Dashboard: React.FC = () => {
       createTask({ ...data, status: TaskStatus.TODO });
     }
     closeTaskDialog();
+  };
+
+  // Calculate hours worked this week
+  const calculateHoursThisWeek = () => {
+    if (!completedTasks?.length) return '0';
+    
+    const now = new Date();
+    const weekStart = startOfWeek(now, { weekStartsOn: 1 }); // Start week on Monday
+    const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+    
+    // Filter tasks completed this week
+    const tasksThisWeek = completedTasks.filter(task => {
+      if (!task.timeCompleted) return false;
+      const completedDate = new Date(task.timeCompleted);
+      return isWithinInterval(completedDate, { start: weekStart, end: weekEnd });
+    });
+    
+    // Sum up hours
+    const totalMinutes = tasksThisWeek.reduce((total, task) => total + (task.timeSpent || 0), 0);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    
+    return `${hours}${minutes > 0 ? '.' + Math.round((minutes / 60) * 10) : ''}`;
+  };
+  
+  // Calculate hours worked this month
+  const calculateHoursThisMonth = () => {
+    if (!completedTasks?.length) return '0';
+    
+    const now = new Date();
+    const monthStart = startOfMonth(now);
+    const monthEnd = endOfMonth(now);
+    
+    // Filter tasks completed this month
+    const tasksThisMonth = completedTasks.filter(task => {
+      if (!task.timeCompleted) return false;
+      const completedDate = new Date(task.timeCompleted);
+      return isWithinInterval(completedDate, { start: monthStart, end: monthEnd });
+    });
+    
+    // Sum up hours
+    const totalMinutes = tasksThisMonth.reduce((total, task) => total + (task.timeSpent || 0), 0);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    
+    return `${hours}${minutes > 0 ? '.' + Math.round((minutes / 60) * 10) : ''}`;
   };
 
   // Handle drag and drop
@@ -107,8 +155,8 @@ const Dashboard: React.FC = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard 
-          title="Total Tasks" 
-          value={stats ? stats.total : 0} 
+          title="To-Do Tasks" 
+          value={stats ? stats.todo : 0} 
           icon={<ClipboardList className="h-6 w-6" />} 
           iconBgColor="bg-blue-100" 
           iconColor="text-primary" 
@@ -123,26 +171,26 @@ const Dashboard: React.FC = () => {
         />
         
         <StatCard 
-          title="Completed" 
-          value={stats ? stats.completed : 0} 
-          icon={<CheckCheck className="h-6 w-6" />} 
+          title="Hours This Week" 
+          value={calculateHoursThisWeek()} 
+          icon={<Clock className="h-6 w-6" />} 
           iconBgColor="bg-green-100" 
           iconColor="text-green-500" 
         />
         
         <StatCard 
-          title="Completion Rate" 
-          value={`${stats ? stats.completionRate : 0}%`} 
-          icon={<BarChart className="h-6 w-6" />} 
+          title="Hours This Month" 
+          value={calculateHoursThisMonth()} 
+          icon={<CalendarClock className="h-6 w-6" />} 
           iconBgColor="bg-violet-100" 
           iconColor="text-violet-500" 
         />
       </div>
       
-      {/* Main Content Sections */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Kanban Board (3 cols wide) */}
-        <div className="lg:col-span-3">
+      {/* Main Content Sections - Vertical Layout */}
+      <div className="flex flex-col space-y-6">
+        {/* Kanban Board (Full Width) */}
+        <div className="w-full">
           <div className="bg-white rounded-lg shadow p-5">
             <h2 className="text-lg font-semibold mb-4">Tasks</h2>
             
@@ -177,8 +225,8 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
         
-        {/* AI Assistant (2 cols wide) */}
-        <div className="lg:col-span-2">
+        {/* AI Assistant (Full Width) */}
+        <div className="w-full">
           <DashboardAIAssistant onTasksAdded={() => {}} />
         </div>
       </div>
