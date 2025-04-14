@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -16,6 +16,14 @@ export const TaskPriority = {
   HIGH: "high",
 } as const;
 
+// Location type enum
+export const LocationType = {
+  AIRBNB: "airbnb",
+  EVENT_VENUE: "event_venue",
+  OFFICE: "office",
+  OTHER: "other",
+} as const;
+
 // User schema
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -26,6 +34,26 @@ export const users = pgTable("users", {
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
+});
+
+// Location schema for Airbnb and event venues
+export const locations = pgTable("locations", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  address: text("address").notNull(),
+  city: text("city").notNull(),
+  state: text("state").notNull(),
+  zip: text("zip").notNull(),
+  type: text("type").notNull().default(LocationType.OTHER),
+  description: text("description"),
+  imageUrl: text("image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  userId: integer("user_id").references(() => users.id),
+});
+
+export const insertLocationSchema = createInsertSchema(locations).omit({
+  id: true,
+  createdAt: true,
 });
 
 // Task schema
@@ -41,6 +69,12 @@ export const tasks = pgTable("tasks", {
   isAiGenerated: integer("is_ai_generated").default(0),
   source: text("source"),
   userId: integer("user_id").references(() => users.id),
+  // New fields
+  locationId: integer("location_id").references(() => locations.id),
+  timeSpent: integer("time_spent"), // Time spent in minutes
+  timeStarted: timestamp("time_started"), // When the task was started
+  timeCompleted: timestamp("time_completed"), // When the task was completed
+  photoUrl: text("photo_url"), // URL to completed task photo
 });
 
 // Create the base schema
@@ -68,15 +102,30 @@ export const insertAiMessageSchema = createInsertSchema(aiMessages).omit({
   timestamp: true,
 });
 
-// Types
-export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
+// Report schema for daily and weekly reports
+export const reports = pgTable("reports", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  type: text("type").notNull(), // "daily" or "weekly"
+  startDate: timestamp("start_date").notNull(),
+  endDate: timestamp("end_date").notNull(),
+  summary: text("summary").notNull(),
+  tasksSummary: text("tasks_summary"), // JSON string containing tasks summary
+  createdAt: timestamp("created_at").defaultNow(),
+  userId: integer("user_id").references(() => users.id),
+});
 
-export type Task = typeof tasks.$inferSelect;
-export type InsertTask = z.infer<typeof insertTaskSchema>;
+export const insertReportSchema = createInsertSchema(reports).omit({
+  id: true,
+  createdAt: true,
+});
 
-export type AIMessage = typeof aiMessages.$inferSelect;
-export type InsertAIMessage = z.infer<typeof insertAiMessageSchema>;
+// Session schema for connect-pg-simple
+export const session = pgTable("session", {
+  sid: text("sid").notNull().primaryKey(),
+  sess: text("sess").notNull(),
+  expire: timestamp("expire").notNull(),
+});
 
 // Extended schemas for validation
 export const taskValidator = insertTaskSchema.extend({
