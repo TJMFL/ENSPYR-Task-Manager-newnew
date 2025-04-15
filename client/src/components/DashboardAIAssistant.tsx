@@ -256,7 +256,7 @@ const DashboardAIAssistant: React.FC<DashboardAIAssistantProps> = ({ onTasksAdde
       <div className="p-3 border-b border-gray-200">
         <h2 className="text-lg font-semibold flex items-center">
           <SendHorizontal className="h-5 w-5 mr-2 text-accent" />
-          AI Assistant
+         Brock's AI Task Assistant
         </h2>
       </div>
       
