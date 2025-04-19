@@ -3,6 +3,9 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { eq, and, gte, lte, desc } from "drizzle-orm";
 
+// Export operators for use in API routes
+export { eq, and, gte, lte, desc };
+
 // Task status enum
 export const TaskStatus = {
   TODO: "todo",
