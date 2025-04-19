@@ -2,7 +2,7 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 // Base API URL (modify this if deploying to a custom domain)
 export const API_BASE_URL = process.env.NODE_ENV === 'production' 
-  ? 'https://your-vercel-app.vercel.app/api' 
+  ? 'https://enspyr-task-manager-newnew.app/api' 
   : '/api';
 
 async function throwIfResNotOk(res: Response) {
