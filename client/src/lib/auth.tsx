@@ -1,6 +1,6 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { queryClient } from './queryClient';
+import { queryClient, apiRequest } from './queryClient';
 
 // Define the user type
 export interface User {
@@ -43,20 +43,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch('/api/auth/user', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        });
-
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
-        } else {
-          setUser(null);
-        }
+        const response = await apiRequest('GET', '/api/auth/user');
+        const userData = await response.json();
+        setUser(userData);
       } catch (error) {
         setUser(null);
       } finally {
@@ -70,20 +59,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Login function
   const login = async (username: string, password: string) => {
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
-      }
-
+      const response = await apiRequest('POST', '/api/auth/login', { username, password });
       const userData = await response.json();
       setUser(userData);
       toast({
@@ -103,20 +79,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Register function
   const register = async (username: string, password: string) => {
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration failed');
-      }
-
+      const response = await apiRequest('POST', '/api/auth/register', { username, password });
       const userData = await response.json();
       setUser(userData);
       toast({
@@ -136,19 +99,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Logout function
   const logout = async () => {
     try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('Logout failed');
-      }
-
+      await apiRequest('POST', '/api/auth/logout');
       setUser(null);
+      
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
       toast({
